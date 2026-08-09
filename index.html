@@ -175,11 +175,8 @@
       const currentHp = hpMatch ? parseInt(hpMatch[1], 10) : 0;
       const maxHp = hpMatch ? parseInt(hpMatch[2], 10) : 0;
 
-      // 一時HP (例: ▼一時HP:0)
-      const tempHp = extractValue(rawText, /▼一時HP:(\d+)/, 0);
-
-      // 習熟ボーナス (例: ▼習熟ボーナス:2)
-      const pb = extractValue(rawText, /▼習熟ボーナス:(\d+)/, 2);
+      // 移動速度 (例: ▼移動速度:30ft./6sq. -> 30)
+      const speed = extractValue(rawText, /▼移動速度:(\d+)ft/, 30);
 
       // 4. ココフォリア用データ構造の組み立て
       const ccfoliaData = {
@@ -191,12 +188,10 @@
           externalUrl: "",
           status: [
             { label: "HP", value: currentHp, max: maxHp },
-            { label: "一時HP", value: tempHp, max: 0 },
             { label: "AC", value: ac, max: ac },
-            { label: "習熟", value: pb, max: pb }
+            { label: "移動速度", value: speed, max: speed }
           ],
           params: [],
-          // チャットパレット部分はそのまま設定
           commands: rawText.trim()
         }
       };
