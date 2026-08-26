@@ -3,77 +3,380 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D&D 5e 呪文辞書</title>
-  <link rel="stylesheet" href="style.css">
+  <title>TRPG 呪文辞書 5e</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-color: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --highlight: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 1rem 2rem;
+      background-color: #020617;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 { font-size: 1.25rem; color: var(--accent-color); }
+
+    .app-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* 検索・フィルターパネル */
+    .filter-panel {
+      width: 320px;
+      padding: 1.5rem;
+      border-right: 1px solid var(--border-color);
+      background-color: #090d16;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      overflow-y: auto;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .form-group label { font-size: 0.85rem; color: var(--text-sub); font-weight: bold; }
+    
+    input[type="text"], select {
+      width: 100%;
+      padding: 0.6rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-color);
+      outline: none;
+    }
+    input[type="text"]:focus, select:focus { border-color: var(--accent-color); }
+
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .checkbox-label {
+      font-size: 0.8rem;
+      background: var(--card-bg);
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+    .checkbox-label input { margin-right: 0.3rem; }
+
+    /* リストパネル */
+    .list-panel {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      align-content: start;
+    }
+
+    .spell-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.1s;
+    }
+    .spell-card:hover {
+      border-color: var(--accent-color);
+      transform: translateY(-2px);
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .card-title { font-size: 1.1rem; font-weight: bold; }
+    .card-title-en { font-size: 0.75rem; color: var(--text-sub); }
+    
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: bold;
+      background: var(--border-color);
+    }
+    .badge-level-0 { background: #475569; }
+    .badge-level-1 { background: #166534; }
+    .badge-level-3 { background: #6b21a8; }
+    
+    .tags { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
+    .tag { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 3px; background-color: #334155; }
+
+    /* 詳細パネル（モーダル風スライドイン） */
+    .detail-panel {
+      width: 400px;
+      border-left: 1px solid var(--border-color);
+      background-color: #0f172a;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: none;
+    }
+    .detail-panel.active { display: block; }
+    .close-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; float: right; font-size: 1.2rem; }
+
+    .detail-section { margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem; margin: 1rem 0; }
+    .detail-grid div { color: var(--text-sub); }
+    .detail-grid span { color: var(--text-color); font-weight: bold; display: block; }
+    
+    .description { font-size: 0.9rem; line-height: 1.6; margin-top: 1rem; white-space: pre-wrap; }
+    .higher-levels { font-size: 0.85rem; line-height: 1.5; margin-top: 1rem; padding: 0.8rem; background: #1e1b4b; border-radius: 6px; }
+
+    /* ハイライト機能 */
+    .hl-search { background-color: var(--highlight); color: #000; padding: 0 2px; border-radius: 2px; }
+    .hl-rule { color: var(--accent-color); font-weight: bold; text-decoration: underline; cursor: pointer; }
+    .hl-dice {
+      background-color: #0284c7;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+      .app-container { flex-direction: column; }
+      .filter-panel { width: 100%; height: auto; max-height: 200px; }
+      .detail-panel { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 100; }
+    }
+  </style>
 </head>
 <body>
+
+  <header>
+    <h1>TRPG 5e 呪文辞書</h1>
+    <span id="spell-count" style="font-size: 0.85rem; color: var(--text-sub);">0 件表示中</span>
+  </header>
+
   <div class="app-container">
-    <!-- 検索・フィルターパネル -->
-    <aside class="sidebar">
-      <h2>D&D 5e 呪文検索</h2>
-      
-      <div class="search-box">
-        <input type="text" id="search-input" placeholder="呪文名・全文検索（例: ファイアーボール / 炎）">
+    <!-- フィルタリングエリア -->
+    <aside class="filter-panel">
+      <div class="form-group">
+        <label for="search-input">キーワード検索</label>
+        <input type="text" id="search-input" placeholder="名前・全文検索...">
       </div>
 
-      <div class="filter-group">
-        <label>クラス</label>
-        <div class="checkbox-group" id="class-filters">
-          <label><input type="checkbox" value="ウィザード"> ウィザード</label>
-          <label><input type="checkbox" value="ソーサラー"> ソーサラー</label>
-          <label><input type="checkbox" value="クレリック"> クレリック</label>
-          <label><input type="checkbox" value="バード"> バード</label>
-          <label><input type="checkbox" value="ドルイド"> ドルイド</label>
-          <label><input type="checkbox" value="パラディン"> パラディン</label>
-          <label><input type="checkbox" value="レンジャー"> レンジャー</label>
-          <label><input type="checkbox" value="ウォーロック"> ウォーロック</label>
-        </div>
-      </div>
-
-      <div class="filter-group">
+      <div class="form-group">
         <label>呪文レベル</label>
-        <select id="level-filter">
+        <select id="level-select">
           <option value="all">すべて</option>
           <option value="0">カン トリップ (0)</option>
           <option value="1">1レベル</option>
           <option value="2">2レベル</option>
           <option value="3">3レベル</option>
-          <option value="4">4レベル</option>
-          <option value="5">5レベル</option>
-          <option value="6">6レベル</option>
-          <option value="7">7レベル</option>
-          <option value="8">8レベル</option>
-          <option value="9">9レベル</option>
         </select>
       </div>
 
-      <div class="filter-group">
-        <label>特殊タグ</label>
+      <div class="form-group">
+        <label>クラス</label>
+        <div class="checkbox-group" id="class-checkboxes">
+          <label class="checkbox-label"><input type="checkbox" value="ウィザード">ウィザード</label>
+          <label class="checkbox-label"><input type="checkbox" value="ソーサラー">ソーサラー</label>
+          <label class="checkbox-label"><input type="checkbox" value="クレリック">クレリック</label>
+          <label class="checkbox-label"><input type="checkbox" value="バード">バード</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>特殊属性</label>
         <div class="checkbox-group">
-          <label><input type="checkbox" id="filter-concentration"> 要集中</label>
-          <label><input type="checkbox" id="filter-ritual"> 儀式可</label>
+          <label class="checkbox-label"><input type="checkbox" id="filter-concentration">要集中</label>
+          <label class="checkbox-label"><input type="checkbox" id="filter-ritual">儀式化可</label>
         </div>
       </div>
     </aside>
 
     <!-- 呪文一覧リスト -->
-    <main class="main-content">
-      <div class="list-header">
-        <span id="result-count">0 件表示中</span>
-      </div>
-      <div id="spell-list" class="spell-list"></div>
-    </main>
+    <main class="list-panel" id="spell-list"></main>
 
-    <!-- 呪文詳細モーダル (スマホ/PC共通モーダル) -->
-    <div id="detail-modal" class="modal hidden">
-      <div class="modal-overlay" id="modal-overlay"></div>
-      <div class="modal-content">
-        <button class="close-btn" id="modal-close">&times;</button>
-        <div id="modal-body"></div>
-      </div>
-    </div>
+    <!-- 呪文詳細パネル -->
+    <section class="detail-panel" id="detail-panel">
+      <button class="close-btn" id="close-detail">✕</button>
+      <div id="detail-content"></div>
+    </section>
   </div>
 
-  <script src="app.js"></script>
+  <script>
+    let spellsData = [];
+
+    // データ読み込み
+    async function loadSpells() {
+      try {
+        const response = await fetch('spells.json');
+        spellsData = await response.json();
+        renderSpells(spellsData);
+      } catch (error) {
+        console.error("データの読み込みに失敗しました:", error);
+      }
+    }
+
+    // フィルタリング処理
+    function filterSpells() {
+      const keyword = document.getElementById('search-input').value.toLowerCase();
+      const selectedLevel = document.getElementById('level-select').value;
+      const selectedClasses = Array.from(document.querySelectorAll('#class-checkboxes input:checked')).map(cb => cb.value);
+      const isConcentration = document.getElementById('filter-concentration').checked;
+      const isRitual = document.getElementById('filter-ritual').checked;
+
+      const filtered = spellsData.filter(spell => {
+        // キーワード一致
+        const matchKeyword = !keyword || 
+          spell.name_ja.toLowerCase().includes(keyword) || 
+          spell.name_en.toLowerCase().includes(keyword) || 
+          spell.description.toLowerCase().includes(keyword);
+
+        // レベル一致
+        const matchLevel = selectedLevel === 'all' || spell.level === parseInt(selectedLevel);
+
+        // クラス一致 (AND/OR: いずれかのクラスが含まれるか)
+        const matchClass = selectedClasses.length === 0 || selectedClasses.some(c => spell.classes.includes(c));
+
+        // 特殊タグ一致
+        const matchConc = !isConcentration || spell.concentration;
+        const matchRitual = !isRitual || spell.ritual;
+
+        return matchKeyword && matchLevel && matchClass && matchConc && matchRitual;
+      });
+
+      renderSpells(filtered, keyword);
+    }
+
+    // 呪文カード描画
+    function renderSpells(spells, keyword = "") {
+      const listContainer = document.getElementById('spell-list');
+      document.getElementById('spell-count').innerText = `${spells.length} 件表示中`;
+      listContainer.innerHTML = '';
+
+      spells.forEach(spell => {
+        const card = document.createElement('div');
+        card.className = 'spell-card';
+        card.onclick = () => showDetail(spell, keyword);
+
+        const levelText = spell.level === 0 ? "カン トリップ" : `${spell.level}レベル`;
+        
+        card.innerHTML = `
+          <div class="card-header">
+            <div>
+              <div class="card-title">${spell.name_ja}</div>
+              <div class="card-title-en">${spell.name_en}</div>
+            </div>
+            <span class="badge badge-level-${spell.level}">${levelText}</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-sub);">${spell.school}</div>
+          <div class="tags">
+            ${spell.concentration ? '<span class="tag">集中</span>' : ''}
+            ${spell.ritual ? '<span class="tag">儀式</span>' : ''}
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    // 詳細表示 & テキスト処理
+    function showDetail(spell, keyword) {
+      const detailPanel = document.getElementById('detail-panel');
+      const detailContent = document.getElementById('detail-content');
+
+      let desc = spell.description;
+      let higher = spell.higher_levels;
+
+      // 1. ルール用語・ダイスの強調
+      desc = formatText(desc);
+      if(higher) higher = formatText(higher);
+
+      // 2. 検索キーワードの強調表示
+      if (keyword) {
+        const reg = new RegExp(`(${keyword})`, 'gi');
+        desc = desc.replace(reg, '<mark class="hl-search">$1</mark>');
+      }
+
+      detailContent.innerHTML = `
+        <div class="detail-section">
+          <h2>${spell.name_ja}</h2>
+          <div style="color: var(--text-sub); font-size: 0.85rem;">${spell.name_en}</div>
+        </div>
+
+        <div class="detail-grid">
+          <div>レベル: <span>${spell.level === 0 ? 'カン トリップ' : spell.level}</span></div>
+          <div>学派: <span>${spell.school}</span></div>
+          <div>発動時間: <span>${spell.casting_time}</span></div>
+          <div>射程: <span>${spell.range}</span></div>
+          <div>持続時間: <span>${spell.duration}</span></div>
+          <div>構成要素: <span>${formatComponents(spell.components)}</span></div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 0.5rem;">
+          修得クラス: ${spell.classes.join(', ')}
+        </div>
+
+        <div class="description">${desc}</div>
+        ${higher ? `<div class="higher-levels"><strong>高レベルキャスト:</strong><br>${higher}</div>` : ''}
+      `;
+
+      detailPanel.classList.add('active');
+    }
+
+    // フォーマット・強調処理（ダイスボタン化・用語リンク化）
+    function formatText(text) {
+      // ダイス表記 [8d6] などの装飾
+      text = text.replace(/\[(\d+d\d+)\]/g, '<button class="hl-dice" onclick="rollDice(\'$1\')">🎲 $1</button>');
+      // ルール用語 [敏捷力セーヴィング・スロー] などの装飾
+      text = text.replace(/\[([^d\d][^\]]+)\]/g, '<span class="hl-rule">$1</span>');
+      return text;
+    }
+
+    function formatComponents(c) {
+      let res = [];
+      if (c.v) res.push('V');
+      if (c.s) res.push('S');
+      if (c.m) res.push(`M (${c.m})`);
+      return res.join(', ');
+    }
+
+    // 簡易ダイスロール機能
+    window.rollDice = function(diceStr) {
+      const [count, sides] = diceStr.split('d').map(Number);
+      let total = 0;
+      let rolls = [];
+      for(let i = 0; i < count; i++) {
+        const roll = Math.floor(Math.random() * sides) + 1;
+        rolls.push(roll);
+        total += roll;
+      }
+      alert(`ダイスロール結果 (${diceStr}):\n[${rolls.join(', ')}] = ${total}`);
+    };
+
+    // イベントリスナー設定
+    document.getElementById('search-input').addEventListener('input', filterSpells);
+    document.getElementById('level-select').addEventListener('change', filterSpells);
+    document.querySelectorAll('#class-checkboxes input').forEach(cb => cb.addEventListener('change', filterSpells));
+    document.getElementById('filter-concentration').addEventListener('change', filterSpells);
+    document.getElementById('filter-ritual').addEventListener('change', filterSpells);
+    document.getElementById('close-detail').addEventListener('click', () => {
+      document.getElementById('detail-panel').classList.remove('active');
+    });
+
+    // 初期化
+    loadSpells();
+  </script>
 </body>
 </html>
