@@ -1,16 +1,50 @@
-{
-  "id": "fireball",
-  "name_ja": "ファイアーボール",
-  "name_en": "Fireball",
-  "level": 3,
-  "school": "力術",
-  "classes": ["ウィザード", "ソーサラー"],
-  "casting_time": "1アクション",
-  "range": "150フィート",
-  "components": { "v": true, "s": true, "m": "コウモリの糞と硫黄の小さな玉" },
-  "duration": "瞬間",
-  "concentration": false,
-  "ritual": false,
-  "description": "君の指先から眩い光のすじが伸び...",
-  "higher_levels": "スロットレベルが4以上の場合、1レベル高くなるごとにダメージが1d6増加する。"
-}
+[
+  {
+    "id": "fireball",
+    "name_ja": "ファイアーボール",
+    "name_en": "Fireball",
+    "level": 3,
+    "school": "力術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "casting_time": "1アクション",
+    "range": "150フィート",
+    "components": { "v": true, "s": true, "m": "コウモリの糞と硫黄の小球" },
+    "duration": "瞬間",
+    "concentration": false,
+    "ritual": false,
+    "description": "指先から閃光が放たれ、指定した点に到達すると爆発する。半径20フィートの球形内にいるすべてのクリーチャーは [敏捷力セーヴィング・スロー] を行わねばならない。失敗すると [8d6] の火ダメージ、成功するとその半分のダメージを受ける。",
+    "higher_levels": "スロットレベルが4以上の場合、1レベル高くなるごとにダメージが [1d6] 増加する。"
+  },
+  {
+    "id": "cure-wounds",
+    "name_ja": "キュア・ウーンズ",
+    "name_en": "Cure Wounds",
+    "level": 1,
+    "school": "力術",
+    "classes": ["クレリック", "バード", "パラディン", "レンジャー", "ドルイド"],
+    "casting_time": "1アクション",
+    "range": "接触",
+    "components": { "v": true, "s": true, "m": "" },
+    "duration": "瞬間",
+    "concentration": false,
+    "ritual": false,
+    "description": "君が触れたクリーチャーは、[1d8] + 君の呪文詠唱能力修正値に等しいヒット・ポイントを回復する。この呪文はアンデッドや人造クリーチャーには効果がない。",
+    "higher_levels": "スロットレベルが2以上の場合、1レベル高くなるごとに回復量が [1d8] 増加する。"
+  },
+  {
+    "id": "shield",
+    "name_ja": "シールド",
+    "name_en": "Shield",
+    "level": 1,
+    "school": "護術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "casting_time": "1リアクション",
+    "range": "自身",
+    "components": { "v": true, "s": true, "m": "" },
+    "duration": "1ラウンド",
+    "concentration": false,
+    "ritual": false,
+    "description": "君が攻撃のヒットを受けた時、または [マジック・ミサイル] の目標になった時に発動できる。君の次のターン開始時まで、君のACに+5のボーナスを得る。",
+    "higher_levels": ""
+  }
+]
