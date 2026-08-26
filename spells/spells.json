@@ -1,0 +1,16 @@
+{
+  "id": "fireball",
+  "name_ja": "ファイアーボール",
+  "name_en": "Fireball",
+  "level": 3,
+  "school": "力術",
+  "classes": ["ウィザード", "ソーサラー"],
+  "casting_time": "1アクション",
+  "range": "150フィート",
+  "components": { "v": true, "s": true, "m": "コウモリの糞と硫黄の小さな玉" },
+  "duration": "瞬間",
+  "concentration": false,
+  "ritual": false,
+  "description": "君の指先から眩い光のすじが伸び...",
+  "higher_levels": "スロットレベルが4以上の場合、1レベル高くなるごとにダメージが1d6増加する。"
+}
