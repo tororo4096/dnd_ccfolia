@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D 5e 呪文辞書</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 検索・フィルターパネル -->
+    <aside class="sidebar">
+      <h2>D&D 5e 呪文検索</h2>
+      
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="呪文名・全文検索（例: ファイアーボール / 炎）">
+      </div>
+
+      <div class="filter-group">
+        <label>クラス</label>
+        <div class="checkbox-group" id="class-filters">
+          <label><input type="checkbox" value="ウィザード"> ウィザード</label>
+          <label><input type="checkbox" value="ソーサラー"> ソーサラー</label>
+          <label><input type="checkbox" value="クレリック"> クレリック</label>
+          <label><input type="checkbox" value="バード"> バード</label>
+          <label><input type="checkbox" value="ドルイド"> ドルイド</label>
+          <label><input type="checkbox" value="パラディン"> パラディン</label>
+          <label><input type="checkbox" value="レンジャー"> レンジャー</label>
+          <label><input type="checkbox" value="ウォーロック"> ウォーロック</label>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>呪文レベル</label>
+        <select id="level-filter">
+          <option value="all">すべて</option>
+          <option value="0">カン トリップ (0)</option>
+          <option value="1">1レベル</option>
+          <option value="2">2レベル</option>
+          <option value="3">3レベル</option>
+          <option value="4">4レベル</option>
+          <option value="5">5レベル</option>
+          <option value="6">6レベル</option>
+          <option value="7">7レベル</option>
+          <option value="8">8レベル</option>
+          <option value="9">9レベル</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>特殊タグ</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="filter-concentration"> 要集中</label>
+          <label><input type="checkbox" id="filter-ritual"> 儀式可</label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 呪文一覧リスト -->
+    <main class="main-content">
+      <div class="list-header">
+        <span id="result-count">0 件表示中</span>
+      </div>
+      <div id="spell-list" class="spell-list"></div>
+    </main>
+
+    <!-- 呪文詳細モーダル (スマホ/PC共通モーダル) -->
+    <div id="detail-modal" class="modal hidden">
+      <div class="modal-overlay" id="modal-overlay"></div>
+      <div class="modal-content">
+        <button class="close-btn" id="modal-close">&times;</button>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
