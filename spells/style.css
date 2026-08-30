@@ -37,39 +37,46 @@ h1 {
   margin-bottom: 15px;
 }
 
-/* 複数選択フィルター */
-.filters-multiple {
-  display: flex;
-  gap: 15px;
+/* チェックボックスフィルター */
+.filter-section {
+  margin-bottom: 12px;
 }
 
-.filter-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.filter-section:last-child {
+  margin-bottom: 0;
 }
 
-.filter-group label {
+.filter-label {
+  display: block;
   font-size: 13px;
   font-weight: bold;
-  margin-bottom: 5px;
   color: #555;
+  margin-bottom: 6px;
 }
 
-.filter-group select {
-  width: 100%;
-  padding: 5px;
-  font-size: 14px;
-  border: 1px solid #ccc;
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  background: #fafafa;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
-  background-color: #fafafa;
 }
 
-.filter-tip {
-  font-size: 11px;
-  color: #777;
-  margin-top: 8px;
-  margin-bottom: 0;
+.checkbox-group label {
+  font-size: 13px;
+  color: #444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.checkbox-group input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #7a2021;
 }
 
 /* 呪文カード */
