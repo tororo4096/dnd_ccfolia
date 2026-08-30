@@ -7,7 +7,7 @@ body {
 }
 
 .container {
-  max-width: 800px;
+  max-width: 850px;
   margin: 0 auto;
 }
 
@@ -34,20 +34,42 @@ h1 {
   border: 1px solid #ccc;
   border-radius: 4px;
   box-sizing: border-box;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
-.filters {
+/* 複数選択フィルター */
+.filters-multiple {
   display: flex;
-  gap: 10px;
+  gap: 15px;
 }
 
-.filters select {
+.filter-group {
   flex: 1;
-  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.filter-group select {
+  width: 100%;
+  padding: 5px;
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.filter-tip {
+  font-size: 11px;
+  color: #777;
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 /* 呪文カード */
@@ -99,7 +121,7 @@ h1 {
 .spell-body {
   margin-top: 12px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .higher-levels {
@@ -115,4 +137,34 @@ h1 {
   text-align: center;
   color: #888;
   margin-top: 30px;
+}
+
+/* ルールキーワードの強調表示 */
+mark.hl-attack {
+  background-color: #ffe6e6;
+  color: #b30000;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+mark.hl-rule {
+  background-color: #fff2cc;
+  color: #b25900;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+mark.hl-damage {
+  background-color: #e6f2ff;
+  color: #0056b3;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.hl-dice {
+  font-weight: bold;
+  color: #2e7d32;
 }
