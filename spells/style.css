@@ -37,13 +37,25 @@ h1 {
   margin-bottom: 15px;
 }
 
-/* チェックボックスフィルター */
+/* フィルター全体：左右2列（左：レベル、右：クラス） */
+.filters-container {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .filter-section {
-  margin-bottom: 12px;
+  display: table-cell;
+  vertical-align: top;
+  width: 50%;
+}
+
+.filter-section:first-child {
+  padding-right: 10px;
 }
 
 .filter-section:last-child {
-  margin-bottom: 0;
+  padding-left: 10px;
 }
 
 .filter-label {
@@ -54,10 +66,8 @@ h1 {
   margin-bottom: 6px;
 }
 
+/* チェックボックス領域：項目を縦2列（2カラム）に配置 */
 .checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
   background: #fafafa;
   padding: 10px;
   border: 1px solid #e0e0e0;
@@ -65,18 +75,22 @@ h1 {
 }
 
 .checkbox-group label {
+  display: inline-block;
+  width: 48%; /* 2列に収まる幅 */
+  box-sizing: border-box;
   font-size: 13px;
   color: #444;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  margin-bottom: 6px;
+  vertical-align: middle;
   user-select: none;
 }
 
 .checkbox-group input[type="checkbox"] {
   cursor: pointer;
   accent-color: #7a2021;
+  margin-right: 4px;
+  vertical-align: middle;
 }
 
 /* 呪文カード */
