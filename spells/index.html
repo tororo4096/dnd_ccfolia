@@ -10,44 +10,45 @@
   <div class="container">
     <h1>D&D 5e 呪文検索サイト</h1>
 
+    <!-- 検索コントロール -->
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="呪文名、効果などで検索...">
       
-      <div class="filters-multiple">
-        <div class="filter-group">
-          <label for="levelFilter">レベル (複数選択可):</label>
-          <select id="levelFilter" multiple size="4">
-            <option value="0">初級呪文</option>
-            <option value="1">1レベル</option>
-            <option value="2">2レベル</option>
-            <option value="3">3レベル</option>
-            <option value="4">4レベル</option>
-            <option value="5">5レベル</option>
-            <option value="6">6レベル</option>
-            <option value="7">7レベル</option>
-            <option value="8">8レベル</option>
-            <option value="9">9レベル</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="classFilter">クラス (複数選択可):</label>
-          <select id="classFilter" multiple size="4">
-            <option value="アーティフィサー">アーティフィサー</option>
-            <option value="ウィザード">ウィザード</option>
-            <option value="ウォーロック">ウォーロック</option>
-            <option value="クレリック">クレリック</option>
-            <option value="ソーサラー">ソーサラー</option>
-            <option value="ドルイド">ドルイド</option>
-            <option value="バード">バード</option>
-            <option value="パラディン">パラディン</option>
-            <option value="レンジャー">レンジャー</option>
-          </select>
+      <!-- レベル選択チェックボックス -->
+      <div class="filter-section">
+        <span class="filter-label">レベル:</span>
+        <div class="checkbox-group" id="levelCheckboxes">
+          <label><input type="checkbox" value="0"> 初級</label>
+          <label><input type="checkbox" value="1"> 1</label>
+          <label><input type="checkbox" value="2"> 2</label>
+          <label><input type="checkbox" value="3"> 3</label>
+          <label><input type="checkbox" value="4"> 4</label>
+          <label><input type="checkbox" value="5"> 5</label>
+          <label><input type="checkbox" value="6"> 6</label>
+          <label><input type="checkbox" value="7"> 7</label>
+          <label><input type="checkbox" value="8"> 8</label>
+          <label><input type="checkbox" value="9"> 9</label>
         </div>
       </div>
-      <p class="filter-tip">※ Ctrlキー（MacはCmdキー）を押しながらクリックで複数選択・解除ができます</p>
+
+      <!-- クラス選択チェックボックス -->
+      <div class="filter-section">
+        <span class="filter-label">クラス:</span>
+        <div class="checkbox-group" id="classCheckboxes">
+          <label><input type="checkbox" value="アーティフィサー"> アーティフィサー</label>
+          <label><input type="checkbox" value="ウィザード"> ウィザード</label>
+          <label><input type="checkbox" value="ウォーロック"> ウォーロック</label>
+          <label><input type="checkbox" value="クレリック"> クレリック</label>
+          <label><input type="checkbox" value="ソーサラー"> ソーサラー</label>
+          <label><input type="checkbox" value="ドルイド"> ドルイド</label>
+          <label><input type="checkbox" value="バード"> バード</label>
+          <label><input type="checkbox" value="パラディン"> パラディン</label>
+          <label><input type="checkbox" value="レンジャー"> レンジャー</label>
+        </div>
+      </div>
     </div>
 
+    <!-- 結果一覧を表示する場所 -->
     <div id="spellList" class="spell-list"></div>
   </div>
 
@@ -63,9 +64,10 @@
       })
       .catch(error => console.error('Error loading spells:', error));
 
-    // 複数選択されたセレクトボックスの値を取得するヘルパー関数
-    function getSelectedValues(selectElement) {
-      return Array.from(selectElement.selectedOptions).map(option => option.value);
+    // チェックされている値の一覧を取得するヘルパー関数
+    function getCheckedValues(containerId) {
+      const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+      return Array.from(checkboxes).map(cb => cb.value);
     }
 
     // 重要なルールのキーワードをハイライト表示する関数
@@ -77,7 +79,7 @@
         .replace(/(近接呪文攻撃|遠隔呪文攻撃|近接武器攻撃|遠隔武器攻撃|呪文難易度|呪文セーヴ)/g, '<mark class="hl-attack">$1</mark>')
         // 精神集中・状態系
         .replace(/(精神集中|完全遮蔽|半遮蔽|三方四分の三遮蔽)/g, '<mark class="hl-rule">$1</mark>')
-        // ダイス・ダメージ種別（例: 1d12 [電撃] や [火笑] など）
+        // ダイス・ダメージ種別
         .replace(/(\d+d\d+)/g, '<span class="hl-dice">$1</span>')
         .replace(/(\[[^\]]+\])/g, '<mark class="hl-damage">$1</mark>');
     }
@@ -85,8 +87,8 @@
     // フィルタリング処理
     function filterSpells() {
       const keyword = document.getElementById('searchInput').value.toLowerCase();
-      const selectedLevels = getSelectedValues(document.getElementById('levelFilter'));
-      const selectedClasses = getSelectedValues(document.getElementById('classFilter'));
+      const selectedLevels = getCheckedValues('levelCheckboxes');
+      const selectedClasses = getCheckedValues('classCheckboxes');
 
       const filtered = spellsData.filter(spell => {
         // キーワード検索
@@ -96,10 +98,10 @@
           (spell.name.altJa && spell.name.altJa.toLowerCase().includes(keyword)) ||
           spell.description.toLowerCase().includes(keyword);
 
-        // レベル複数検索（選択がない場合はすべて通過）
+        // レベル複数検索（何も未選択の場合はすべて通過）
         const matchLevel = selectedLevels.length === 0 || selectedLevels.includes(spell.level.toString());
 
-        // クラス複数検索（選択されたクラスのいずれか1つでも含まれていればマッチ）
+        // クラス複数検索（何も未選択の場合はすべて通過、選択時はどれか1つでも該当すれば通過）
         const matchClass = selectedClasses.length === 0 || selectedClasses.some(c => spell.classes.includes(c));
 
         return matchKeyword && matchLevel && matchClass;
@@ -110,8 +112,11 @@
 
     // イベントリスナーの設定
     document.getElementById('searchInput').addEventListener('input', filterSpells);
-    document.getElementById('levelFilter').addEventListener('change', filterSpells);
-    document.getElementById('classFilter').addEventListener('change', filterSpells);
+    
+    // チェックボックス変更時にフィルターを実行
+    document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', filterSpells);
+    });
 
     // 呪文カードの描画関数
     function renderSpells(spells) {
