@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D 5e 呪文検索</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>D&D 5e 呪文検索サイト</h1>
+
+    <!-- 検索コントロール -->
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="呪文名、効果などで検索...">
+      
+      <div class="filters">
+        <select id="levelFilter">
+          <option value="">すべてのレベル</option>
+          <option value="0">初級呪文 (0)</option>
+          <option value="1">1レベル</option>
+          <option value="2">2レベル</option>
+          <option value="3">3レベル</option>
+          <!-- 必要に応じて4〜9レベルを追加 -->
+        </select>
+
+        <select id="classFilter">
+          <option value="">すべてのクラス</option>
+          <option value="ソーサラー">ソーサラー</option>
+          <option value="ウォーロック">ウォーロック</option>
+          <option value="ウィザード">ウィザード</option>
+          <option value="クレリック">クレリック</option>
+          <option value="バード">バード</option>
+          <option value="パラディン">パラディン</option>
+          <option value="ファイター">ファイター</option>
+          <option value="モンク">モンク</option>
+          <option value="ローグ">ローグ</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 結果一覧を表示する場所 -->
+    <div id="spellList" class="spell-list"></div>
+  </div>
+
+  <script>
+    let spellsData = [];
+
+    // JSONデータの取得
+    fetch('spells.json')
+      .then(response => response.json())
+      .then(data => {
+        spellsData = data;
+        renderSpells(spellsData);
+      })
+      .catch(error => console.error('Error loading spells:', error));
+
+    // フィルタリング処理
+    function filterSpells() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      const selectedLevel = document.getElementById('levelFilter').value;
+      const selectedClass = document.getElementById('classFilter').value;
+
+      const filtered = spellsData.filter(spell => {
+        // キーワード検索（名前、英語名、説明文など）
+        const matchKeyword = 
+          spell.name.ja.toLowerCase().includes(keyword) ||
+          spell.name.en.toLowerCase().includes(keyword) ||
+          (spell.name.altJa && spell.name.altJa.toLowerCase().includes(keyword)) ||
+          spell.description.toLowerCase().includes(keyword);
+
+        // レベル検索
+        const matchLevel = selectedLevel === "" || spell.level.toString() === selectedLevel;
+
+        // クラス検索
+        const matchClass = selectedClass === "" || spell.classes.includes(selectedClass);
+
+        return matchKeyword && matchLevel && matchClass;
+      });
+
+      renderSpells(filtered);
+    }
+
+    // イベントリスナーの設定
+    document.getElementById('searchInput').addEventListener('input', filterSpells);
+    document.getElementById('levelFilter').addEventListener('change', filterSpells);
+    document.getElementById('classFilter').addEventListener('change', filterSpells);
+
+    // 呪文カードの描画関数
+    function renderSpells(spells) {
+      const container = document.getElementById('spellList');
+      container.innerHTML = '';
+
+      if (spells.length === 0) {
+        container.innerHTML = '<p class="no-results">該当する呪文が見つかりませんでした。</p>';
+        return;
+      }
+
+      spells.forEach(spell => {
+        const card = document.createElement('div');
+        card.className = 'spell-card';
+
+        // 構成要素の文字列化
+        const comps = [];
+        if (spell.components.verbal) comps.push('音声');
+        if (spell.components.somatic) comps.push('動作');
+        if (spell.components.material) comps.push(`物質 (${spell.components.materialDetail})`);
+
+        const levelText = spell.level === 0 ? '初級呪文' : `${spell.level}レベル`;
+
+        card.innerHTML = `
+          <div class="spell-header">
+            <h2>${spell.name.ja} <span class="alt-name">(${spell.name.en} / ${spell.name.altJa})</span></h2>
+            <span class="level-badge">${levelText} / ${spell.school}</span>
+          </div>
+          <div class="spell-meta">
+            <p><strong>クラス:</strong> ${spell.classes.join(', ')}</p>
+            <p><strong>発動時間:</strong> ${spell.castingTime}</p>
+            <p><strong>射程:</strong> ${spell.range}</p>
+            <p><strong>構成要素:</strong> ${comps.join('、')}</p>
+            <p><strong>持続時間:</strong> ${spell.duration.text}</p>
+          </div>
+          <div class="spell-body">
+            <p>${spell.description.replace(/\n/g, '<br>')}</p>
+            ${spell.higherLevels ? `<p class="higher-levels"><strong>高レベル版:</strong> ${spell.higherLevels}</p>` : ''}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
