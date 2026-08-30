@@ -10,36 +10,44 @@
   <div class="container">
     <h1>D&D 5e 呪文検索サイト</h1>
 
-    <!-- 検索コントロール -->
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="呪文名、効果などで検索...">
       
-      <div class="filters">
-        <select id="levelFilter">
-          <option value="">すべてのレベル</option>
-          <option value="0">初級呪文 (0)</option>
-          <option value="1">1レベル</option>
-          <option value="2">2レベル</option>
-          <option value="3">3レベル</option>
-          <!-- 必要に応じて4〜9レベルを追加 -->
-        </select>
+      <div class="filters-multiple">
+        <div class="filter-group">
+          <label for="levelFilter">レベル (複数選択可):</label>
+          <select id="levelFilter" multiple size="4">
+            <option value="0">初級呪文</option>
+            <option value="1">1レベル</option>
+            <option value="2">2レベル</option>
+            <option value="3">3レベル</option>
+            <option value="4">4レベル</option>
+            <option value="5">5レベル</option>
+            <option value="6">6レベル</option>
+            <option value="7">7レベル</option>
+            <option value="8">8レベル</option>
+            <option value="9">9レベル</option>
+          </select>
+        </div>
 
-        <select id="classFilter">
-          <option value="">すべてのクラス</option>
-          <option value="ソーサラー">ソーサラー</option>
-          <option value="ウォーロック">ウォーロック</option>
-          <option value="ウィザード">ウィザード</option>
-          <option value="クレリック">クレリック</option>
-          <option value="バード">バード</option>
-          <option value="パラディン">パラディン</option>
-          <option value="ファイター">ファイター</option>
-          <option value="モンク">モンク</option>
-          <option value="ローグ">ローグ</option>
-        </select>
+        <div class="filter-group">
+          <label for="classFilter">クラス (複数選択可):</label>
+          <select id="classFilter" multiple size="4">
+            <option value="アーティフィサー">アーティフィサー</option>
+            <option value="ウィザード">ウィザード</option>
+            <option value="ウォーロック">ウォーロック</option>
+            <option value="クレリック">クレリック</option>
+            <option value="ソーサラー">ソーサラー</option>
+            <option value="ドルイド">ドルイド</option>
+            <option value="バード">バード</option>
+            <option value="パラディン">パラディン</option>
+            <option value="レンジャー">レンジャー</option>
+          </select>
+        </div>
       </div>
+      <p class="filter-tip">※ Ctrlキー（MacはCmdキー）を押しながらクリックで複数選択・解除ができます</p>
     </div>
 
-    <!-- 結果一覧を表示する場所 -->
     <div id="spellList" class="spell-list"></div>
   </div>
 
@@ -55,25 +63,44 @@
       })
       .catch(error => console.error('Error loading spells:', error));
 
+    // 複数選択されたセレクトボックスの値を取得するヘルパー関数
+    function getSelectedValues(selectElement) {
+      return Array.from(selectElement.selectedOptions).map(option => option.value);
+    }
+
+    // 重要なルールのキーワードをハイライト表示する関数
+    function highlightRules(text) {
+      if (!text) return '';
+      
+      return text
+        // 判定・攻撃系
+        .replace(/(近接呪文攻撃|遠隔呪文攻撃|近接武器攻撃|遠隔武器攻撃|呪文難易度|呪文セーヴ)/g, '<mark class="hl-attack">$1</mark>')
+        // 精神集中・状態系
+        .replace(/(精神集中|完全遮蔽|半遮蔽|三方四分の三遮蔽)/g, '<mark class="hl-rule">$1</mark>')
+        // ダイス・ダメージ種別（例: 1d12 [電撃] や [火笑] など）
+        .replace(/(\d+d\d+)/g, '<span class="hl-dice">$1</span>')
+        .replace(/(\[[^\]]+\])/g, '<mark class="hl-damage">$1</mark>');
+    }
+
     // フィルタリング処理
     function filterSpells() {
       const keyword = document.getElementById('searchInput').value.toLowerCase();
-      const selectedLevel = document.getElementById('levelFilter').value;
-      const selectedClass = document.getElementById('classFilter').value;
+      const selectedLevels = getSelectedValues(document.getElementById('levelFilter'));
+      const selectedClasses = getSelectedValues(document.getElementById('classFilter'));
 
       const filtered = spellsData.filter(spell => {
-        // キーワード検索（名前、英語名、説明文など）
+        // キーワード検索
         const matchKeyword = 
           spell.name.ja.toLowerCase().includes(keyword) ||
           spell.name.en.toLowerCase().includes(keyword) ||
           (spell.name.altJa && spell.name.altJa.toLowerCase().includes(keyword)) ||
           spell.description.toLowerCase().includes(keyword);
 
-        // レベル検索
-        const matchLevel = selectedLevel === "" || spell.level.toString() === selectedLevel;
+        // レベル複数検索（選択がない場合はすべて通過）
+        const matchLevel = selectedLevels.length === 0 || selectedLevels.includes(spell.level.toString());
 
-        // クラス検索
-        const matchClass = selectedClass === "" || spell.classes.includes(selectedClass);
+        // クラス複数検索（選択されたクラスのいずれか1つでも含まれていればマッチ）
+        const matchClass = selectedClasses.length === 0 || selectedClasses.some(c => spell.classes.includes(c));
 
         return matchKeyword && matchLevel && matchClass;
       });
@@ -100,13 +127,18 @@
         const card = document.createElement('div');
         card.className = 'spell-card';
 
-        // 構成要素の文字列化
+        // 構成要素
         const comps = [];
         if (spell.components.verbal) comps.push('音声');
         if (spell.components.somatic) comps.push('動作');
         if (spell.components.material) comps.push(`物質 (${spell.components.materialDetail})`);
 
         const levelText = spell.level === 0 ? '初級呪文' : `${spell.level}レベル`;
+        
+        // 精神集中の強調フラグ
+        const durationText = spell.duration.concentration 
+          ? `<mark class="hl-rule">${spell.duration.text}</mark>` 
+          : spell.duration.text;
 
         card.innerHTML = `
           <div class="spell-header">
@@ -118,11 +150,11 @@
             <p><strong>発動時間:</strong> ${spell.castingTime}</p>
             <p><strong>射程:</strong> ${spell.range}</p>
             <p><strong>構成要素:</strong> ${comps.join('、')}</p>
-            <p><strong>持続時間:</strong> ${spell.duration.text}</p>
+            <p><strong>持続時間:</strong> ${durationText}</p>
           </div>
           <div class="spell-body">
-            <p>${spell.description.replace(/\n/g, '<br>')}</p>
-            ${spell.higherLevels ? `<p class="higher-levels"><strong>高レベル版:</strong> ${spell.higherLevels}</p>` : ''}
+            <p>${highlightRules(spell.description).replace(/\n/g, '<br>')}</p>
+            ${spell.higherLevels ? `<p class="higher-levels"><strong>高レベル版:</strong> ${highlightRules(spell.higherLevels)}</p>` : ''}
           </div>
         `;
         container.appendChild(card);
