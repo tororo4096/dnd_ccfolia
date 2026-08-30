@@ -1,0 +1,118 @@
+body {
+  font-family: "Helvetica Neue", Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", メイリオ, Meiryo, sans-serif;
+  background-color: #f4f1ea;
+  color: #333;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: #7a2021;
+  border-bottom: 2px solid #7a2021;
+  padding-bottom: 10px;
+}
+
+/* 検索エリア */
+.search-box {
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.search-box input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+}
+
+.filters select {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* 呪文カード */
+.spell-card {
+  background: #fff;
+  border: 1px solid #dcd6cd;
+  border-left: 5px solid #7a2021;
+  border-radius: 4px;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.spell-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.spell-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #7a2021;
+}
+
+.alt-name {
+  font-size: 14px;
+  color: #666;
+  font-weight: normal;
+}
+
+.level-badge {
+  font-size: 13px;
+  background: #e9e2d5;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.spell-meta p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.spell-body {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.higher-levels {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #ccc;
+  background-color: #fcfbfa;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.no-results {
+  text-align: center;
+  color: #888;
+  margin-top: 30px;
+}
