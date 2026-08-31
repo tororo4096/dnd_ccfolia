@@ -18,6 +18,7 @@ let raceDataList = [];
 let state = {
     level: 1,
     selectedRaceId: "human",
+    selectedArchetype: "champion",
     halfElfChoice: { stat1: "STR", stat2: "DEX" },
     baseScores: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
     asiChoices: {},
@@ -26,7 +27,7 @@ let state = {
     style2: "defense"
 };
 
-// --- 初期化処理 (複数JSONの非同期並行フェッチ) ---
+// --- 初期化処理 (JSONの非同期読み込み) ---
 async function initApp() {
     try {
         const [classRes, raceRes] = await Promise.all([
@@ -50,7 +51,7 @@ async function initApp() {
         render();
     } catch (error) {
         console.error(error);
-        alert('設定データの読み込みエラーが発生しました。Webサーバー経由で起動しているか確認してください。');
+        alert('設定データの読み込みエラーが発生しました。Webサーバー（Live Server等）経由で起動しているか確認してください。');
     }
 }
 
@@ -62,6 +63,11 @@ function setupEventListeners() {
 
     document.getElementById('race-select').addEventListener('change', (e) => {
         state.selectedRaceId = e.target.value;
+        render();
+    });
+
+    document.getElementById('archetype-select').addEventListener('change', (e) => {
+        state.selectedArchetype = e.target.value;
         render();
     });
 
@@ -102,21 +108,21 @@ function calculateCost(scores) {
     return Object.values(scores).reduce((sum, val) => sum + POINT_COSTS[val], 0);
 }
 
-// 種族補正の計算
+// 種族能力値補正の計算
 function getRaceBonusMap() {
     const race = getSelectedRace();
     let bonusMap = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
 
     if (!race) return bonusMap;
 
-    // 固定補正
+    // 固定種族補正
     if (race.ability_bonuses) {
         Object.keys(race.ability_bonuses).forEach(k => {
             bonusMap[k] += race.ability_bonuses[k];
         });
     }
 
-    // ハーフエルフなどの選択式補正
+    // ハーフエルフ選択式補正
     if (race.id === "half_elf") {
         if (state.halfElfChoice.stat1) bonusMap[state.halfElfChoice.stat1] += 1;
         if (state.halfElfChoice.stat2) bonusMap[state.halfElfChoice.stat2] += 1;
@@ -133,7 +139,7 @@ function getFinalScores() {
         finals[a.key] = state.baseScores[a.key] + (raceBonuses[a.key] || 0);
     });
 
-    // ASIの算定
+    // ASI (能力値上昇) 加算
     if (classData && classData.asi_levels) {
         classData.asi_levels.forEach(lvl => {
             if (state.level >= lvl && state.asiChoices[lvl]) {
@@ -153,42 +159,74 @@ function getFinalScores() {
 
 function renderRaceSelect() {
     const select = document.getElementById('race-select');
+    if (!select) return;
     select.innerHTML = raceDataList.map(r => {
         const name = r.subrace_name ? `${r.race_name} (${r.subrace_name})` : r.race_name;
         return `<option value="${r.id}" ${state.selectedRaceId === r.id ? 'selected' : ''}>${name}</option>`;
     }).join('');
 }
 
-// --- メインレンダリング ---
+// サブクラス（戦士の類型）選択肢の更新
+function renderArchetypeOptions() {
+    if (!classData || !classData.archetypes) return;
+    
+    const select = document.getElementById('archetype-select');
+    const descElem = document.getElementById('archetype-desc');
+    if (!select) return;
+    
+    if (state.level < classData.archetype_level) {
+        select.disabled = true;
+        select.innerHTML = `<option>3レベルで解放されます</option>`;
+        if (descElem) descElem.textContent = "キャラクターレベルが3に達すると類型を選択できます。";
+        return;
+    }
+
+    select.disabled = false;
+    select.innerHTML = classData.archetypes.map(a => 
+        `<option value="${a.id}" ${state.selectedArchetype === a.id ? 'selected' : ''}>${a.name}</option>`
+    ).join('');
+
+    const currentArchetype = classData.archetypes.find(a => a.id === state.selectedArchetype);
+    if (currentArchetype && descElem) {
+        descElem.textContent = currentArchetype.desc;
+    }
+}
+
+// --- メイン描画コントロール ---
 function render() {
     if (!classData || raceDataList.length === 0) return;
 
     const currentRace = getSelectedRace();
 
-    // 1. レベル / 移動速度 / 習熟ボーナス
+    // 1. 基本パラメータ
     document.getElementById('level-disp').textContent = state.level;
     document.getElementById('speed-disp').textContent = `${currentRace.speed}ft`;
     const prof = getProficiencyBonus(state.level);
     document.getElementById('prof-bonus').textContent = `+${prof}`;
 
-    // 2. ハーフエルフの選択UI表示制御
+    // 2. ハーフエルフ専用選択UI制御
     const heGroup = document.getElementById('half-elf-bonus-group');
-    if (currentRace.id === "half_elf") {
-        heGroup.classList.remove('hidden');
-        const availableStats = ABILITIES.filter(a => a.key !== "CHA");
-        
-        const renderHESelect = (elemId, currentVal) => {
-            document.getElementById(elemId).innerHTML = availableStats.map(a => 
-                `<option value="${a.key}" ${currentVal === a.key ? 'selected' : ''}>${a.name}</option>`
-            ).join('');
-        };
-        renderHESelect('he-stat-1', state.halfElfChoice.stat1);
-        renderHESelect('he-stat-2', state.halfElfChoice.stat2);
-    } else {
-        heGroup.classList.add('hidden');
+    if (heGroup) {
+        if (currentRace.id === "half_elf") {
+            heGroup.classList.remove('hidden');
+            const availableStats = ABILITIES.filter(a => a.key !== "CHA");
+            
+            const renderHESelect = (elemId, currentVal) => {
+                const el = document.getElementById(elemId);
+                if (el) {
+                    el.innerHTML = availableStats.map(a => 
+                        `<option value="${a.key}" ${currentVal === a.key ? 'selected' : ''}>${a.name}</option>`
+                    ).join('');
+                }
+            };
+            renderHESelect('he-stat-1', state.halfElfChoice.stat1);
+            renderHESelect('he-stat-2', state.halfElfChoice.stat2);
+        } else {
+            heGroup.classList.add('hidden');
+        }
     }
 
-    // 3. 能力値 & ポイント買収計算
+    // 3. 能力値 ＆ ポイント買収法計算
     const finals = getFinalScores();
     const raceBonuses = getRaceBonusMap();
     const usedPoints = calculateCost(state.baseScores);
@@ -220,7 +258,7 @@ function render() {
         tbody.appendChild(tr);
     });
 
-    // 4. HP算出 (ヒル・ドワーフの種族レベルボーナスを反映)
+    // 4. HP算出 (ヒル・ドワーフの種族Lvボーナス追従)
     const conMod = getModifier(finals['CON']);
     const raceHpBonus = (currentRace.hp_per_level_bonus || 0) * state.level;
     let hp = classData.hp_first_level + conMod + (currentRace.hp_per_level_bonus || 0);
@@ -229,7 +267,8 @@ function render() {
     }
     document.getElementById('hp-disp').textContent = hp;
 
-    // 5. 各選択・タイムライン表示の更新
+    // 5. 各セクションの描画更新
+    renderArchetypeOptions();
     renderStyleOptions();
     renderASIControls();
     renderRaceTraits();
@@ -247,6 +286,7 @@ function changeBase(key, delta) {
 function renderSkills() {
     if (!classData) return;
     const container = document.getElementById('skills-list');
+    if (!container) return;
     container.innerHTML = "";
     
     classData.skill_choices.options.forEach(skill => {
@@ -281,17 +321,20 @@ function renderStyleOptions() {
     const s2Group = document.getElementById('style-2-group');
     const s2Select = document.getElementById('style-2');
 
-    s1Select.innerHTML = classData.fighting_styles.map(s => 
-        `<option value="${s.id}" ${state.style1 === s.id ? 'selected' : ''}>${s.name} - ${s.desc}</option>`
-    ).join('');
+    if (s1Select) {
+        s1Select.innerHTML = classData.fighting_styles.map(s => 
+            `<option value="${s.id}" ${state.style1 === s.id ? 'selected' : ''}>${s.name} - ${s.desc}</option>`
+        ).join('');
+    }
 
-    if (state.level >= 10) {
+    // チャンピオンなどで10レベル到達時のスタイル追加
+    if (state.level >= 10 && s2Group && s2Select) {
         s2Group.classList.remove('hidden');
         s2Select.innerHTML = classData.fighting_styles
             .filter(s => s.id !== state.style1)
             .map(s => `<option value="${s.id}" ${state.style2 === s.id ? 'selected' : ''}>${s.name} - ${s.desc}</option>`)
             .join('');
-    } else {
+    } else if (s2Group) {
         s2Group.classList.add('hidden');
     }
 }
@@ -299,6 +342,7 @@ function renderStyleOptions() {
 function renderASIControls() {
     if (!classData) return;
     const container = document.getElementById('asi-container');
+    if (!container) return;
     container.innerHTML = "";
 
     const activeLevels = classData.asi_levels.filter(l => l <= state.level);
@@ -342,6 +386,7 @@ function updateASI(level, key, value) {
 function renderRaceTraits() {
     const race = getSelectedRace();
     const container = document.getElementById('race-traits-list');
+    if (!container) return;
     container.innerHTML = "";
 
     if (!race || !race.traits) return;
@@ -360,10 +405,27 @@ function renderRaceTraits() {
 function renderTimeline() {
     if (!classData) return;
     const container = document.getElementById('features-list');
+    if (!container) return;
     container.innerHTML = "";
 
-    const activeFeatures = classData.features.filter(f => f.level <= state.level);
-    activeFeatures.forEach(f => {
+    // 基本クラス特徴の取得
+    let allFeatures = [...classData.features.filter(f => f.level <= state.level)];
+
+    // 3レベル以上のサブクラス（戦士の類型）特徴を結合
+    if (state.level >= classData.archetype_level) {
+        const arch = classData.archetypes.find(a => a.id === state.selectedArchetype);
+        if (arch && arch.features) {
+            const archFeatures = arch.features
+                .filter(f => f.level <= state.level)
+                .map(f => ({ ...f, name: `[${arch.name}] ${f.name}` }));
+            allFeatures = [...allFeatures, ...archFeatures];
+        }
+    }
+
+    // レベル順に並び替え
+    allFeatures.sort((a, b) => a.level - b.level);
+
+    allFeatures.forEach(f => {
         const item = document.createElement('div');
         item.className = 'feature-item';
         item.innerHTML = `
@@ -374,5 +436,5 @@ function renderTimeline() {
     });
 }
 
-// アプリケーション起動
+// アプリケーション初期化実行
 initApp();
