@@ -1,0 +1,199 @@
+:root {
+    --primary-color: #7b1113;
+    --bg-color: #f4f1ea;
+    --card-bg: #ffffff;
+    --text-color: #2b2b2b;
+    --border-color: #d3c9b8;
+    --accent-color: #d4af37;
+    --alert-color: #a82222;
+}
+
+body {
+    font-family: "Hiragino Kaku Gothic ProN", "メイリオ", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.app-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.header-info span {
+    margin-left: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.level-section {
+    background: #fffdf9;
+    border-left: 6px solid var(--primary-color);
+}
+
+.level-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.level-control input[type="range"] {
+    flex-grow: 1;
+}
+
+.level-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.stat-badge {
+    background: #eef2f5;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .grid-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ability-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.ability-table th, .ability-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid #eee;
+}
+
+.btn-sm {
+    padding: 2px 8px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+    border-radius: 3px;
+}
+
+.btn-sm:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.checkbox-grid label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.style-select-group {
+    margin-bottom: 15px;
+}
+
+.style-select-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.style-select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.asi-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.timeline .feature-item {
+    padding: 10px;
+    border-left: 3px solid var(--primary-color);
+    background: #fafafa;
+    margin-bottom: 10px;
+    border-radius: 0 4px 4px 0;
+}
+
+.feature-item .lvl-tag {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-right: 8px;
+}
+
+.feature-desc {
+    font-size: 0.9rem;
+    color: #555;
+    margin-top: 4px;
+}
+
+.sub-text {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.hidden {
+    display: none;
+}
