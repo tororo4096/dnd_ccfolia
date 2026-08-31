@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e キャラクタービルダー (ファイター)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <h1>D&D 5e キャラクタービルダー</h1>
+        <div class="header-info">
+            <span>種族: <strong>ヒューマン</strong> (全能力値 +1)</span>
+            <span>クラス: <strong>ファイター</strong></span>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- 上部：基本パラメータ設定 -->
+        <section class="card level-section">
+            <h2>キャラクターレベル設定</h2>
+            <div class="level-control">
+                <label for="level-slider">レベル: <span id="level-disp">1</span></label>
+                <input type="range" id="level-slider" min="1" max="20" value="1">
+            </div>
+            <div class="level-stats">
+                <div class="stat-badge">習熟ボーナス: <strong id="prof-bonus">+2</strong></div>
+                <div class="stat-badge">推算HP: <strong id="hp-disp">10</strong> (10 + CON修正値 + ダイス/固定値)</div>
+            </div>
+        </section>
+
+        <div class="grid-layout">
+            <!-- 左カラム：能力値ポイント割り振りと判定 -->
+            <div class="column">
+                <section class="card">
+                    <h2>能力値 (ポイント買収法: <span id="pts-left">27</span> / 27 pt)</h2>
+                    <p class="sub-text">※ヒューマンの種族特徴で全員+1されています。</p>
+                    <table class="ability-table">
+                        <thead>
+                            <tr>
+                                <th>能力値</th>
+                                <th>ベース</th>
+                                <th>+1(人)</th>
+                                <th>ASI/特技</th>
+                                <th>最終値</th>
+                                <th>修正値</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ability-rows">
+                            <!-- JSで自動生成 -->
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="card">
+                    <h2>技能選択 (2つ選択)</h2>
+                    <div id="skills-list" class="checkbox-grid">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>戦闘スタイル選択</h2>
+                    <div class="style-select-group">
+                        <label for="style-1">1レベル戦闘スタイル:</label>
+                        <select id="style-1" class="style-select"></select>
+                    </div>
+                    <div id="style-2-group" class="style-select-group hidden">
+                        <label for="style-2">10レベル戦闘スタイル追加 (チャンピオン):</label>
+                        <select id="style-2" class="style-select"></select>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 右カラム：能力値上昇(ASI)選択と獲得特徴一覧 -->
+            <div class="column">
+                <section class="card" id="asi-card">
+                    <h2>能力値上昇 (ASI) 選択</h2>
+                    <div id="asi-container">
+                        <!-- レベルに応じてJSで割り振り枠を生成 -->
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>獲得できるクラス特徴 & 習熟一覧</h2>
+                    <div id="features-list" class="timeline">
+                        <!-- JSでレベル毎の特徴を表示 -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
