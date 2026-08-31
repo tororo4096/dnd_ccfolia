@@ -33,7 +33,6 @@ body {
 }
 
 .header-info span {
-    margin-left: 1rem;
     background: rgba(255, 255, 255, 0.15);
     padding: 0.3rem 0.8rem;
     border-radius: 4px;
@@ -62,6 +61,23 @@ body {
     padding-bottom: 8px;
 }
 
+.race-section {
+    background: #fdfbf7;
+    border-left: 6px solid var(--accent-color);
+}
+
+.half-elf-group {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f0ebe1;
+    border-radius: 4px;
+}
+
+.he-select {
+    padding: 4px;
+    margin-right: 10px;
+}
+
 .level-section {
     background: #fffdf9;
     border-left: 6px solid var(--primary-color);
@@ -81,8 +97,9 @@ body {
 
 .level-stats {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     margin-top: 15px;
+    flex-wrap: wrap;
 }
 
 .stat-badge {
@@ -173,6 +190,14 @@ body {
     padding: 10px;
     border-left: 3px solid var(--primary-color);
     background: #fafafa;
+    margin-bottom: 10px;
+    border-radius: 0 4px 4px 0;
+}
+
+.timeline .trait-item {
+    padding: 10px;
+    border-left: 3px solid var(--accent-color);
+    background: #fdfcfa;
     margin-bottom: 10px;
     border-radius: 0 4px 4px 0;
 }
