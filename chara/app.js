@@ -10,12 +10,15 @@ const ABILITIES = [
 
 const POINT_COSTS = { 8:0, 9:1, 10:2, 11:3, 12:4, 13:5, 14:7, 15:9 };
 
-// --- 外部JSONから読み込まれるデータ保持オブジェクト ---
+// --- データ保持変数 ---
 let classData = null;
+let raceDataList = [];
 
 // --- 状態管理 ---
 let state = {
     level: 1,
+    selectedRaceId: "human",
+    halfElfChoice: { stat1: "STR", stat2: "DEX" },
     baseScores: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
     asiChoices: {},
     selectedSkills: [],
@@ -23,39 +26,70 @@ let state = {
     style2: "defense"
 };
 
-// --- 初期化処理 (JSON非同期フェッチ) ---
+// --- 初期化処理 (複数JSONの非同期並行フェッチ) ---
 async function initApp() {
     try {
-        const response = await fetch('class.json');
-        if (!response.ok) throw new Error('class.json の読み込みに失敗しました。');
-        classData = await response.json();
+        const [classRes, raceRes] = await Promise.all([
+            fetch('class.json'),
+            fetch('race.json')
+        ]);
 
-        // イベントリスナーの登録
-        document.getElementById('level-slider').addEventListener('input', (e) => {
-            state.level = parseInt(e.target.value, 10);
-            render();
-        });
+        if (!classRes.ok || !raceRes.ok) {
+            throw new Error('設定ファイル(JSON)の読み込みに失敗しました。');
+        }
 
-        document.getElementById('style-1').addEventListener('change', (e) => {
-            state.style1 = e.target.value;
-            render();
-        });
+        classData = await classRes.json();
+        raceDataList = await raceRes.json();
 
-        document.getElementById('style-2').addEventListener('change', (e) => {
-            state.style2 = e.target.value;
-            render();
-        });
+        // UIイベントの初期化
+        setupEventListeners();
 
-        // 初回レンダリング
+        // 初期描画
+        renderRaceSelect();
         renderSkills();
         render();
     } catch (error) {
         console.error(error);
-        alert('設定データの読み込みエラーが発生しました。Webサーバー（ローカルサーバー等）経由で開いているか確認してください。');
+        alert('設定データの読み込みエラーが発生しました。Webサーバー経由で起動しているか確認してください。');
     }
 }
 
-// --- 計算補助関数 ---
+function setupEventListeners() {
+    document.getElementById('level-slider').addEventListener('input', (e) => {
+        state.level = parseInt(e.target.value, 10);
+        render();
+    });
+
+    document.getElementById('race-select').addEventListener('change', (e) => {
+        state.selectedRaceId = e.target.value;
+        render();
+    });
+
+    document.getElementById('he-stat-1').addEventListener('change', (e) => {
+        state.halfElfChoice.stat1 = e.target.value;
+        render();
+    });
+
+    document.getElementById('he-stat-2').addEventListener('change', (e) => {
+        state.halfElfChoice.stat2 = e.target.value;
+        render();
+    });
+
+    document.getElementById('style-1').addEventListener('change', (e) => {
+        state.style1 = e.target.value;
+        render();
+    });
+
+    document.getElementById('style-2').addEventListener('change', (e) => {
+        state.style2 = e.target.value;
+        render();
+    });
+}
+
+function getSelectedRace() {
+    return raceDataList.find(r => r.id === state.selectedRaceId) || raceDataList[0];
+}
+
 function getProficiencyBonus(level) {
     return Math.ceil(1 + (level / 4));
 }
@@ -68,12 +102,38 @@ function calculateCost(scores) {
     return Object.values(scores).reduce((sum, val) => sum + POINT_COSTS[val], 0);
 }
 
+// 種族補正の計算
+function getRaceBonusMap() {
+    const race = getSelectedRace();
+    let bonusMap = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
+
+    if (!race) return bonusMap;
+
+    // 固定補正
+    if (race.ability_bonuses) {
+        Object.keys(race.ability_bonuses).forEach(k => {
+            bonusMap[k] += race.ability_bonuses[k];
+        });
+    }
+
+    // ハーフエルフなどの選択式補正
+    if (race.id === "half_elf") {
+        if (state.halfElfChoice.stat1) bonusMap[state.halfElfChoice.stat1] += 1;
+        if (state.halfElfChoice.stat2) bonusMap[state.halfElfChoice.stat2] += 1;
+    }
+
+    return bonusMap;
+}
+
 function getFinalScores() {
     let finals = {};
+    const raceBonuses = getRaceBonusMap();
+
     ABILITIES.forEach(a => {
-        finals[a.key] = state.baseScores[a.key] + 1; // ヒューマンボーナス(+1)
+        finals[a.key] = state.baseScores[a.key] + (raceBonuses[a.key] || 0);
     });
 
+    // ASIの算定
     if (classData && classData.asi_levels) {
         classData.asi_levels.forEach(lvl => {
             if (state.level >= lvl && state.asiChoices[lvl]) {
@@ -91,17 +151,46 @@ function getFinalScores() {
     return finals;
 }
 
-// --- レンダリング処理 ---
-function render() {
-    if (!classData) return;
+function renderRaceSelect() {
+    const select = document.getElementById('race-select');
+    select.innerHTML = raceDataList.map(r => {
+        const name = r.subrace_name ? `${r.race_name} (${r.subrace_name})` : r.race_name;
+        return `<option value="${r.id}" ${state.selectedRaceId === r.id ? 'selected' : ''}>${name}</option>`;
+    }).join('');
+}
 
-    // 1. レベル & 習熟ボーナス
+// --- メインレンダリング ---
+function render() {
+    if (!classData || raceDataList.length === 0) return;
+
+    const currentRace = getSelectedRace();
+
+    // 1. レベル / 移動速度 / 習熟ボーナス
     document.getElementById('level-disp').textContent = state.level;
+    document.getElementById('speed-disp').textContent = `${currentRace.speed}ft`;
     const prof = getProficiencyBonus(state.level);
     document.getElementById('prof-bonus').textContent = `+${prof}`;
 
-    // 2. 能力値 & ポイント買収
+    // 2. ハーフエルフの選択UI表示制御
+    const heGroup = document.getElementById('half-elf-bonus-group');
+    if (currentRace.id === "half_elf") {
+        heGroup.classList.remove('hidden');
+        const availableStats = ABILITIES.filter(a => a.key !== "CHA");
+        
+        const renderHESelect = (elemId, currentVal) => {
+            document.getElementById(elemId).innerHTML = availableStats.map(a => 
+                `<option value="${a.key}" ${currentVal === a.key ? 'selected' : ''}>${a.name}</option>`
+            ).join('');
+        };
+        renderHESelect('he-stat-1', state.halfElfChoice.stat1);
+        renderHESelect('he-stat-2', state.halfElfChoice.stat2);
+    } else {
+        heGroup.classList.add('hidden');
+    }
+
+    // 3. 能力値 & ポイント買収計算
     const finals = getFinalScores();
+    const raceBonuses = getRaceBonusMap();
     const usedPoints = calculateCost(state.baseScores);
     document.getElementById('pts-left').textContent = 27 - usedPoints;
 
@@ -109,16 +198,17 @@ function render() {
     tbody.innerHTML = "";
     ABILITIES.forEach(a => {
         const base = state.baseScores[a.key];
+        const rBonus = raceBonuses[a.key] || 0;
         const final = finals[a.key];
         const mod = getModifier(final);
         const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
-        const asiBonus = final - base - 1;
+        const asiBonus = final - base - rBonus;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${a.name} (${a.key})</strong></td>
             <td>${base}</td>
-            <td>+1</td>
+            <td>+${rBonus}</td>
             <td>+${asiBonus}</td>
             <td><strong>${final}</strong></td>
             <td><strong>${modStr}</strong></td>
@@ -130,21 +220,19 @@ function render() {
         tbody.appendChild(tr);
     });
 
-    // 3. HP算出 (JSONから基準値を取得)
+    // 4. HP算出 (ヒル・ドワーフの種族レベルボーナスを反映)
     const conMod = getModifier(finals['CON']);
-    let hp = classData.hp_first_level + conMod;
+    const raceHpBonus = (currentRace.hp_per_level_bonus || 0) * state.level;
+    let hp = classData.hp_first_level + conMod + (currentRace.hp_per_level_bonus || 0);
     if (state.level > 1) {
-        hp += (state.level - 1) * (classData.hp_subsequent_levels + conMod);
+        hp += (state.level - 1) * (classData.hp_subsequent_levels + conMod) + (raceHpBonus - (currentRace.hp_per_level_bonus || 0));
     }
     document.getElementById('hp-disp').textContent = hp;
 
-    // 4. 戦闘スタイルドロップダウン
+    // 5. 各選択・タイムライン表示の更新
     renderStyleOptions();
-
-    // 5. ASI入力フォーム枠の更新
     renderASIControls();
-
-    // 6. 特徴タイムライン更新
+    renderRaceTraits();
     renderTimeline();
 }
 
@@ -180,7 +268,7 @@ function toggleSkill(skill) {
         if (state.selectedSkills.length < maxSkills) {
             state.selectedSkills.push(skill);
         } else {
-            alert(`${classData.class_name}の技能習熟は${maxSkills}つまで選択可能です。`);
+            alert(`技能習熟は${maxSkills}つまで選択可能です。`);
         }
     }
     renderSkills();
@@ -251,6 +339,24 @@ function updateASI(level, key, value) {
     render();
 }
 
+function renderRaceTraits() {
+    const race = getSelectedRace();
+    const container = document.getElementById('race-traits-list');
+    container.innerHTML = "";
+
+    if (!race || !race.traits) return;
+
+    race.traits.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'trait-item';
+        item.innerHTML = `
+            <div><strong>${t.name}</strong></div>
+            <div class="feature-desc">${t.desc}</div>
+        `;
+        container.appendChild(item);
+    });
+}
+
 function renderTimeline() {
     if (!classData) return;
     const container = document.getElementById('features-list');
@@ -268,5 +374,5 @@ function renderTimeline() {
     });
 }
 
-// アプリケーション開始
+// アプリケーション起動
 initApp();
