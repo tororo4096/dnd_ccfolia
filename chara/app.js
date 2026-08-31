@@ -16,10 +16,10 @@ let raceDataList = [];
 
 // --- 状態管理 ---
 let state = {
-    selectedClassId: "rogue", // 初期選択クラス
+    selectedClassId: "fighter",
     level: 1,
     selectedRaceId: "human",
-    selectedArchetype: "thief",
+    selectedArchetype: "champion",
     halfElfChoice: { stat1: "STR", stat2: "DEX" },
     baseScores: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
     asiChoices: {},
@@ -43,10 +43,8 @@ async function initApp() {
         classDataList = await classRes.json();
         raceDataList = await raceRes.json();
 
-        // UIイベントの初期化
         setupEventListeners();
 
-        // 初期描画
         renderClassSelect();
         renderRaceSelect();
         renderSkills();
@@ -71,7 +69,8 @@ function setupEventListeners() {
         classSelect.addEventListener('change', (e) => {
             state.selectedClassId = e.target.value;
             const currentClass = getCurrentClass();
-            // クラス変更時にデフォルトサブクラスを更新・技能リセット
+            
+            // クラス変更時に対応する初期サブクラスをセット
             if (currentClass.archetypes && currentClass.archetypes.length > 0) {
                 state.selectedArchetype = currentClass.archetypes[0].id;
             }
@@ -120,7 +119,6 @@ function getModifier(score) {
     return Math.floor((score - 10) / 2);
 }
 
-// ローグ用：急所攻撃ダイス算出 (ceil(Lv / 2)d6)
 function getSneakAttackDice(level) {
     return `${Math.ceil(level / 2)}d6`;
 }
@@ -191,10 +189,17 @@ function renderRaceSelect() {
     }).join('');
 }
 
+// サブクラス（類型）レンダリング & 見出し自動更新
 function renderArchetypeOptions() {
     const currentClass = getCurrentClass();
     const select = document.getElementById('archetype-select');
     const descElem = document.getElementById('archetype-desc');
+    const titleElem = document.getElementById('archetype-title');
+
+    if (titleElem && currentClass.archetype_title) {
+        titleElem.textContent = currentClass.archetype_title;
+    }
+
     if (!select) return;
     
     if (state.level < currentClass.archetype_level) {
@@ -291,9 +296,9 @@ function render() {
     }
     document.getElementById('hp-disp').textContent = hp;
 
-    // 5. 各UIセクション描画
+    // 5. 各UI描画・非表示制御
     renderArchetypeOptions();
-    renderStyleOptions();
+    renderStyleOptions(); // 戦闘スタイルの表示/非表示制御
     renderASIControls();
     renderRaceTraits();
     renderTimeline();
@@ -313,10 +318,9 @@ function renderSkills() {
     if (!container) return;
     container.innerHTML = "";
     
-    // 現在のクラスの習熟上限を表示
     const skillTitle = document.getElementById('skill-title');
     if (skillTitle) {
-        skillTitle.textContent = `技能習熟 (最大${currentClass.skill_choices.count}つ選択)`;
+        skillTitle.textContent = `技能習熟 (${currentClass.class_name}: 最大${currentClass.skill_choices.count}つ選択)`;
     }
 
     currentClass.skill_choices.options.forEach(skill => {
@@ -345,17 +349,17 @@ function toggleSkill(skill) {
     renderSkills();
 }
 
+// 戦闘スタイル描画（ローグなど持たないクラスはカードごと非表示）
 function renderStyleOptions() {
     const currentClass = getCurrentClass();
     const styleCard = document.getElementById('style-card');
     if (!styleCard) return;
 
-    // 戦闘スタイル要素を持つクラス（ファイター等）のみ表示
     if (!currentClass.fighting_styles) {
-        styleCard.classList.add('hidden');
+        styleCard.style.display = 'none'; // 戦闘スタイルを持たないクラスでは非表示
         return;
     }
-    styleCard.classList.remove('hidden');
+    styleCard.style.display = 'block'; // ファイター選択時には表示
 
     const s1Select = document.getElementById('style-1');
     const s2Group = document.getElementById('style-2-group');
@@ -447,18 +451,15 @@ function renderTimeline() {
     if (!container) return;
     container.innerHTML = "";
 
-    // 1. 基本クラス特徴
     let allFeatures = currentClass.features
         .filter(f => f.level <= state.level)
         .map(f => {
-            // ローグの急所攻撃ダイス数を自動動的埋め込み
             if (f.name === "急所攻撃") {
                 return { ...f, desc: `${f.desc} 【現在のダイス: ${getSneakAttackDice(state.level)}】` };
             }
             return f;
         });
 
-    // 2. サブクラス（類型）特徴
     if (state.level >= currentClass.archetype_level) {
         const arch = currentClass.archetypes.find(a => a.id === state.selectedArchetype);
         if (arch && arch.features) {
@@ -469,7 +470,6 @@ function renderTimeline() {
         }
     }
 
-    // レベル順整列
     allFeatures.sort((a, b) => a.level - b.level);
 
     allFeatures.forEach(f => {
@@ -483,5 +483,4 @@ function renderTimeline() {
     });
 }
 
-// 初期化
 initApp();
