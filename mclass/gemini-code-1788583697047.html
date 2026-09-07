@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D クラス特徴早見表 ＆ マルチクラス計算機</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --accent-color: #c9a050;
+      --text-color: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --border-color: #333333;
+      --badge-bg: #2a2a3e;
+      --badge-text: #8a99ad;
+      --multiclass-bg: #181c24;
+      --multiclass-border: #384458;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--accent-color);
+    }
+
+    h1 {
+      color: var(--accent-color);
+      font-size: 2rem;
+      letter-spacing: 1.5px;
+    }
+
+    /* コントロールパネルエリア */
+    .controls-wrapper {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 25px;
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      color: var(--accent-color);
+      margin-bottom: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .multiclass-builder {
+      background-color: var(--multiclass-bg);
+      border: 1px solid var(--multiclass-border);
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .class-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .class-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .row-label {
+      width: 70px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    .btn {
+      background-color: #2a2a2a;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #383838;
+      border-color: var(--accent-color);
+    }
+
+    .btn-danger {
+      background-color: #4a1f1f;
+      color: #ff9999;
+      border-color: #662222;
+    }
+
+    .btn-danger:hover {
+      background-color: #662a2a;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    select, input {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--accent-color);
+    }
+
+    /* サマリーカードエリア */
+    .summary-card {
+      background-color: #181c24;
+      border: 1px solid #2d3748;
+      border-left: 4px solid var(--accent-color);
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 25px;
+      display: none;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+
+    .summary-item label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .summary-val {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    /* テーブル・早見表エリア */
+    .class-section {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+
+    .class-header {
+      background-color: #252525;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .class-title {
+      font-size: 1.5rem;
+      color: var(--accent-color);
+    }
+
+    .class-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .meta-badge {
+      background-color: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.8rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #3d3d5c;
+    }
+
+    .base-info-panel {
+      background-color: #181818;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      font-size: 0.9rem;
+    }
+
+    .base-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 8px 20px;
+    }
+
+    .base-info-item span {
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    .base-info-item.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .tab-container {
+      display: flex;
+      background-color: #1a1a1a;
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .tab-button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tab-button.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+      background-color: var(--card-bg);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .archetype-desc {
+      font-style: italic;
+      color: var(--text-muted);
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: #252525;
+      color: var(--accent-color);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .level-col {
+      width: 60px;
+      text-align: center;
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    .name-col {
+      width: 180px;
+      font-weight: 600;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    mark {
+      background-color: #c9a050;
+      color: #121212;
+      border-radius: 2px;
+      padding: 0 2px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>D&D クラス特徴早見表 ＆ マルチクラス計算機</h1>
+  </header>
+
+  <div class="controls-wrapper">
+    <div class="panel-title">⚔️ マルチクラス計算・構成設定</div>
+    <div class="multiclass-builder">
+      <!-- 主クラス設定 -->
+      <div class="class-row">
+        <span class="row-label">主クラス</span>
+        <select id="primary-class" onchange="handleMulticlassChange()">
+          <option value="">-- 未選択 --</option>
+        </select>
+        <label style="margin-left:8px; margin-bottom:0;">Lv:</label>
+        <select class="class-level-select" id="primary-class-lvl" onchange="handleMulticlassChange()">
+          <!-- JSで1-20生成 -->
+        </select>
+      </div>
+
+      <!-- 副クラス動的追加コンテナ -->
+      <div id="subclasses-container"></div>
+
+      <div style="margin-top: 10px;">
+        <button type="button" class="btn" onclick="addSubClassRow()">＋ 副クラスを追加</button>
+      </div>
+    </div>
+
+    <!-- 検索＆パラメータエリア -->
+    <div class="controls">
+      <div class="control-group">
+        <label for="con-mod">耐久力修正値 (CON)</label>
+        <input type="number" id="con-mod" value="0" min="-5" max="10">
+      </div>
+      <div class="control-group">
+        <label for="search-input">キーワード検索</label>
+        <input type="text" id="search-input" placeholder="特徴名や解説文を検索...">
+      </div>
+    </div>
+  </div>
+
+  <!-- マルチクラス計算サマリー -->
+  <div id="summary-card" class="summary-card">
+    <div class="summary-grid">
+      <div class="summary-item">
+        <label>総キャラクターレベル</label>
+        <div id="summary-total-lvl" class="summary-val">Lv 0</div>
+      </div>
+      <div class="summary-item">
+        <label>習熟ボーナス</label>
+        <div id="summary-prof-bonus" class="summary-val">+2</div>
+      </div>
+      <div class="summary-item">
+        <label>合計体力 (合計HP)</label>
+        <div id="summary-total-hp" class="summary-val">0</div>
+      </div>
+      <div class="summary-item">
+        <label>実質キャスターレベル</label>
+        <div id="summary-caster-lvl" class="summary-val">なし</div>
+      </div>
+    </div>
+    <div id="multiclass-spell-slots" style="display:none; margin-top: 10px;">
+      <label style="font-size: 0.8rem; color: var(--text-muted);">マルチクラス合算 呪文スロット</label>
+      <table style="font-size: 0.85rem; text-align: center; margin-top: 4px;">
+        <thead>
+          <tr>
+            <th>1Lv</th><th>2Lv</th><th>3Lv</th><th>4Lv</th><th>5Lv</th><th>6Lv</th><th>7Lv</th><th>8Lv</th><th>9Lv</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="multiclass-slots-row"></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <main id="app"></main>
+
+  <script>
+    const classData = [
+      {
+        "class_id": "wizard",
+        "class_name": "ウィザード",
+        "hit_die": 6,
+        "hp_first_level": 6,
+        "hp_subsequent_levels": 4,
+        "caster_type": 1,
+        "saving_throws": ["INT", "WIS"],
+        "proficiencies": {
+          "armor": "なし",
+          "weapons": "ダガー、ダーツ、スリング、クオータースタッフ、ライト・クロスボウ",
+          "tools": "なし"
+        },
+        "skill_choices": {
+          "count": 2,
+          "options": ["医術", "看破", "宗教", "捜査", "魔法学", "歴史"]
+        },
+        "equipment": [
+          "（a）クオータースタッフ、または（b）ダガー",
+          "（a）呪文構成要素ポーチ、または（b）秘術焦点具",
+          "（a）学者パック、または（b）探険家パック",
+          "呪文書"
+        ],
+        "asi_levels": [4, 8, 12, 16, 19],
+        "archetype_level": 2,
+        "archetype_title": "秘術の学派",
+        "archetypes": [
+          {
+            "id": "illusion",
+            "name": "幻術系統",
+            "desc": "感覚を狂わせ、精神をまどわし、存在し得ないものをも実在するかのように見せる幻影の魔法を修める学派。",
+            "features": [
+              { "level": 2, "name": "幻術の専門家", "desc": "幻術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "マイナー・イリュージョン強化", "desc": "マイナー・イリュージョンを修得（習得済なら他の初級呪文1つ）。1回の発動で音と映像の両方を生み出せる。" },
+              { "level": 6, "name": "可変幻影", "desc": "持続1分以上の幻術の持続中、アクションを用いてその幻の性質を変化させることができる。" },
+              { "level": 10, "name": "幻影変り身", "desc": "攻撃を受けた際、リアクションで自身の幻を割り込ませ、攻撃を自動的にミスにできる（1回/小休憩または大休憩）。" },
+              { "level": 14, "name": "実体ある幻影", "desc": "1レベル以上の幻術で生成した自律行動しない物体1個を、ボーナス・アクションで1分間実体化させられる（ダメージを与える等の害は不可）。" }
+            ]
+          },
+          {
+            "id": "conjuration",
+            "name": "召喚術系統",
+            "desc": "物体やクリーチャーを出現させたり、瞬間移動や次元間移動を自在に操る学派。",
+            "features": [
+              { "level": 2, "name": "召喚術の専門家", "desc": "召喚術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "小召喚", "desc": "アクションで1辺3ft・重量10lb以内の見覚えのある非魔法的物体1つを10ft以内に召喚する（1時間持続、ダメージ発生等で消滅）。" },
+              { "level": 6, "name": "友好的位置交換", "desc": "アクションで30ft以内の空きスペースか、同意する小型/中型クリーチャーと位置を交換する（1回/大休憩、または1レベル以上の召喚術発動で回復）。" },
+              { "level": 10, "name": "召喚術集中強化", "desc": "召喚術呪文への精神集中は、ダメージを受けても破れることがなくなる。" },
+              { "level": 14, "name": "頑丈な召喚クリーチャー", "desc": "召喚術呪文で召喚または創造したクリーチャーは、すべて30の一時的ヒット・ポイントを得る。" }
+            ]
+          },
+          {
+            "id": "necromancy",
+            "name": "死霊術系統",
+            "desc": "生と死、知識、知識、そしてアンデッドの力を操作し、生命力を奪い取って自らの魔力へと変える学派。",
+            "features": [
+              { "level": 2, "name": "死霊術の専門家", "desc": "死霊術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "生命刈り取り", "desc": "1レベル以上の呪文で敵を倒した際、(呪文レベル×2) HPを回復（死霊術なら(呪文レベル×3) HP回復）。人造・アンデッドには無効。" },
+              { "level": 6, "name": "アンデッド使い", "desc": "アニメイト・デッドを修得。発動時に作成できるアンデッドが1体増加し、生成されたアンデッドは最大HP（+ウィザードLv）と武器ダメージ（+習熟ボーナス）が増加する。" },
+              { "level": 10, "name": "アンデッド慣れ", "desc": "[死霊]ダメージ抵抗を得る。また、最大HPの減少効果を受けなくなる。" },
+              { "level": 14, "name": "アンデッド支配", "desc": "60ft以内のアンデッド1体をアクションで【魅力】セーヴさせ、失敗時に支配下に置く（知性判定で毎時再セーヴの可能性あり）。" }
+            ]
+          },
+          {
+            "id": "enchantment",
+            "name": "心術系統",
+            "desc": "他者の精神に働きかけ、魅了や記憶の操作によって屈服または誘導する学派。",
+            "features": [
+              { "level": 2, "name": "心術の専門家", "desc": "心術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "催眠の凝視", "desc": "5ft以内の敵1体を【判断力】セーヴさせ、失敗すると移動速度0かつ無力化を伴う魅了状態にする（毎ターンアクションで維持可能）。" },
+              { "level": 6, "name": "とっさの魅了", "desc": "30ft以内からの攻撃に対し、リアクションで【判断力】セーヴを強いて攻撃対象を他の近くの目標へそらせる。" },
+              { "level": 10, "name": "二股の心術", "desc": "単体を対象とする1レベル以上の心術呪文を発動する際、2体目の目標を同時に選択できる。" },
+              { "level": 14, "name": "記憶操作", "desc": "心術呪文で魅了されたことを気づかせないようにできる。また、アクションで魅了中の出来事を(1 + 魅力修正値)時間分忘れさせることができる。" }
+            ]
+          },
+          {
+            "id": "divination",
+            "name": "占術系統",
+            "desc": "時間・空間・意識のヴェールを見通し、過去・現在・未来の知識を得る学派。",
+            "features": [
+              { "level": 2, "name": "占術の専門家", "desc": "占術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "予見", "desc": "大休憩ごとにd20を2回振り記録する。自分または見えている目標の攻撃/セーヴ/能力値判定の出目を、そのダイス結果と差し替えることができる。" },
+              { "level": 6, "name": "占術の達人", "desc": "2レベル以上のスロットで占術呪文を発動した際、それより低いレベル（最大5Lv）の消費済みスロットを1つ回復する。" },
+              { "level": 10, "name": "第三の眼", "desc": "アクションで「暗視(60ft)」「エーテル界視覚(60ft)」「読解力向上」「不可視視認(10ft)」から1つを選択し、休憩または無力化まで効果を得る。" },
+              { "level": 14, "name": "予見強化", "desc": "「予見」で記録するd20の数が2個から3個に増加する。" }
+            ]
+          },
+          {
+            "id": "transmutation",
+            "name": "変成術系統",
+            "desc": "エネルギーと物質の形態や性情を変化させ、物体や生命を作り変える学派。",
+            "features": [
+              { "level": 2, "name": "変成術の専門家", "desc": "変成術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "初級錬金術", "desc": "10分かけて、木・石・鉄・銅・銀の非魔法的物質を別の素材へ一時的に変化させる（1時間持続）。" },
+              { "level": 6, "name": "変成術士の石", "desc": "8時間で特殊な石を作成。所持者に「暗視」「移動速度+10ft」「CONセーヴ習熟」「特定属性抵抗」のいずれか1つの利益を与える。" },
+              { "level": 10, "name": "姿変え", "desc": "ポリモーフを呪文書に追加。1日1回スロット消費なしで自身をCR1以下の野獣に変化させられる（小休憩/大休憩で回復）。" },
+              { "level": 14, "name": "変成術奥義", "desc": "変成術士の石を破壊することで、「大変化」「万能薬（全回復・全治）」「生命回復（レイズ・デッド）」「若返り（3d10歳若返る）」のいずれかを瞬時に発動する。" }
+            ]
+          },
+          {
+            "id": "abjuration",
+            "name": "防御術系統",
+            "desc": "守護、打ち払い、保護の魔法に秀で、有害な効果や攻撃から身を守る学派。",
+            "features": [
+              { "level": 2, "name": "防御術の専門家", "desc": "防御術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "秘術の防壁", "desc": "1レベル以上の防御術発動時、HP(ウィザードLv×2 + INT修正値)を持つ防壁を展開。ダメージを肩代わりし、防御術発動ごとにHPが回復する。" },
+              { "level": 6, "name": "防壁展開", "desc": "30ft以内の味方がダメージを受けた際、リアクションで自らの「秘術の防壁」にそのダメージを肩代わりさせられる。" },
+              { "level": 10, "name": "防御術強化", "desc": "カウンタースペルやディスペル・マジックなど、発動時に能力値判定を要する防御術に習熟ボーナスを加算できる。" },
+              { "level": 14, "name": "呪文抵抗", "desc": "すべての呪文に対するセーヴィング・スローに有利を得る。また、呪文による全ダメージに対して抵抗を得る。" }
+            ]
+          },
+          {
+            "id": "evocation",
+            "name": "力術系統",
+            "desc": "極寒、業火、轟雷、紫電、強酸などの強力な元素的効果を作り出す魔法を重点的に学ぶ学派。",
+            "features": [
+              { "level": 2, "name": "力術の専門家", "desc": "力術呪文を呪文書に書き写すのに要する金銭と時間が半分になる。" },
+              { "level": 2, "name": "呪文効果範囲操作", "desc": "力術呪文発動時、見えている対象を(1 + 呪文レベル)体まで自動的にセーヴ成功させられる。成功でダメージ半減の呪文の場合、対象はダメージを受けない。" },
+              { "level": 6, "name": "初級呪文強化", "desc": "セーヴを強いるダメージ初級呪文に対し、敵がセーヴ成功しても半分のダメージを与える（追加効果はなし）。" },
+              { "level": 10, "name": "力術強化", "desc": "発動するウィザード力術呪文の1回のダメージ・ロールに【知力】修正値を加算できる。" },
+              { "level": 14, "name": "限界突破", "desc": "1〜5レベルのダメージ呪文で最大ダメージを出せる。2回目以降の使用はレベルに応じた［死霊］ダメージを受ける（抵抗・完全耐性無視）。" }
+            ]
+          }
+        ],
+        "features": [
+          { "level": 1, "name": "呪文発動", "desc": "知力を発動能力としてウィザード呪文を使用可能。初級呪文3種と1レベル呪文6種を収めた呪文書を所持。" },
+          { "level": 1, "name": "秘術回復", "desc": "1日1回、小休憩時に(ウィザード・レベル / 2)切り上げ以下の合計レベルの呪文スロットを回復できる（6レベル以上のスロットは不可）。" },
+          { "level": 2, "name": "秘術の学派", "desc": "選択した学派の特徴を得る。" },
+          { "level": 18, "name": "呪文体得", "desc": "呪文書から選択した1レベル呪文1つと2レベル呪文1つを、準備していればスロット消費なしで最低レベル発動できる。" },
+          { "level": 20, "name": "愛用呪文", "desc": "呪文書から選択した3レベル呪文2つを常に準備状態（準備数カウント外）とし、それぞれ小休憩/大休憩ごとに1回スロット消費なしで発動できる。" }
+        ]
+      },
+      {
+        "class_id": "cleric",
+        "class_name": "クレリック",
+        "hit_die": 8,
+        "hp_first_level": 8,
+        "hp_subsequent_levels": 5,
+        "caster_type": 1,
+        "saving_throws": ["WIS", "CHA"],
+        "proficiencies": {
+          "armor": "軽装鎧、中装鎧、盾",
+          "weapons": "単純武器",
+          "tools": "なし"
+        },
+        "skill_choices": {
+          "count": 2,
+          "options": ["医術", "看破", "宗教", "説得", "歴史"]
+        },
+        "equipment": [
+          "（a）メイス、または（b）ウォーハンマー（要習熟）",
+          "（a）スケイル・メイル、または（b）レザー・アーマー、または（c）チェイン・メイル（要習熟）",
+          "（a）ライト・クロスボウとボルト20本、または（b）任意の単純武器1つ",
+          "（a）僧侶パック、または（b）探険家パック",
+          "シールドと聖印"
+        ],
+        "asi_levels": [4, 8, 12, 16, 19],
+        "archetype_level": 1,
+        "archetype_title": "信仰の領域",
+        "archetypes": [
+          {
+            "id": "life_domain",
+            "name": "生命の領域",
+            "desc": "活力と健康を重んじ、傷病者を癒し、死ならびに悪の勢力を打ち払う正のエネルギーを司る領域。",
+            "features": [
+              { "level": 1, "name": "習熟追加", "desc": "重装鎧の習熟を得る。" },
+              { "level": 1, "name": "生命の使徒", "desc": "1レベル以上の呪文でHPを回復する際、対象の回復量に追加で (2 + 呪文レベル) HPを加算する。" },
+              { "level": 2, "name": "神性伝導：生命保護", "desc": "アクションで聖印を示し、30ft以内の任意の対象に合計 (クレリックLv × 5) HPを分配して回復する（現在HPが最大値の半分を超える回復は不可。アンデッド・人造には無効）。" },
+              { "level": 6, "name": "幸いなる癒し手", "desc": "自分以外のクリーチャーに1レベル以上の治癒呪文を発動した際、自分のHPも (2 + 呪文レベル) 回復する。" },
+              { "level": 8, "name": "信仰込めた打撃", "desc": "各ターンに1回、近接武器攻撃ヒット時に追加で1d8［光輝］ダメージを与える（14レベルで2d8に増加）。" },
+              { "level": 17, "name": "治癒の極意", "desc": "呪文でHPを回復する際、ダイスを振らずにすべて最大値として計算する。" }
+            ]
+          },
+          {
+            "id": "trickery_domain",
+            "name": "欺きの領域",
+            "desc": "秩序に挑戦し、敵をごまかし、いたずら、だまし、盗みによって世界を撹乱する神々に仕える領域。",
+            "features": [
+              { "level": 1, "name": "トリックスターの祝福", "desc": "アクションで自分以外の同意する接触したクリーチャー1体に【敏捷力】〈隠密〉判定での有利を1時間与える。" },
+              { "level": 2, "name": "神性伝導：二重存在", "desc": "アクションで1分間持続する完璧な幻影を作成（要精神集中）。幻影の位置から呪文を発動でき、自分と幻影の両方が5ft以内にいる敵への攻撃ロールに有利を得る（ボーナス・アクションで30ft移動可能）。" },
+              { "level": 6, "name": "神性伝導：影の衣", "desc": "アクションで次の自分のターン終了時まで不可視状態になる（攻撃や呪文発動で解除）。" },
+              { "level": 8, "name": "信仰込めた打撃", "desc": "各ターンに1回、武器攻撃ヒット時に追加で1d8［毒］ダメージを与える（14レベルで2d8に増加）。" },
+              { "level": 17, "name": "多重存在", "desc": "「二重存在」で1つではなく最大4つの幻影を同時に作り出せるようになる。" }
+            ]
+          },
+          {
+            "id": "tempest_domain",
+            "name": "嵐の領域",
+            "desc": "電撃、雷鳴、地震、嵐、空と海を統べ、世の人に威厳と畏怖をもたらす神々に仕える領域。",
+            "features": [
+              { "level": 1, "name": "習熟追加", "desc": "軍用武器および重装鎧の習熟を得る。" },
+              { "level": 1, "name": "嵐の怒り", "desc": "5ft以内の敵から攻撃を受けた際、リアクションで【敏捷力】セーヴを強め、失敗で2d8［電撃］または［雷鳴］ダメージ（成功で半減）を与える（1日【判断力】修正値回）。" },
+              { "level": 2, "name": "神性伝導：破壊の怒り", "desc": "［電撃］または［雷鳴］ダメージをロールする際、神性伝導を使用してダイスを振らず自動的に最大ダメージを与える。" },
+              { "level": 6, "name": "押しやる電撃", "desc": "大型以下のクリーチャーに［電撃］ダメージを与えた際、その対象を自分から離れる方向に10ft（3m）押しやることができる。" },
+              { "level": 8, "name": "信仰込めた打撃", "desc": "各ターンに1回、武器攻撃ヒット時に追加で1d8［電撃］ダメージを与える（14レベルで2d8に増加）。" },
+              { "level": 17, "name": "嵐の子", "desc": "屋外（地下や屋内を除く）にいる間、歩行移動速度に等しい飛行移動速度を得る。" }
+            ]
+          },
+          {
+            "id": "war_domain",
+            "name": "戦の領域",
+            "desc": "名誉、騎士道、あるいは破壊や征服など、戦いのあらゆる側面と戦士たちを統べる神々に仕える領域。",
+            "features": [
+              { "level": 1, "name": "習熟追加", "desc": "軍用武器および重装鎧の習熟を得る。" },
+              { "level": 1, "name": "戦闘司祭", "desc": "攻撃アクションを行ったターン、ボーナス・アクションで1回の武器攻撃を行える（1日【判断力】修正値回）。" },
+              { "level": 2, "name": "神性伝導：必中打撃", "desc": "自分の攻撃ロールを行った後（ヒット/ミス判定前）、神性伝導を使用してその攻撃ロールに+10のボーナスを与える。" },
+              { "level": 6, "name": "神性伝導：戦神の祝福", "desc": "30ft以内の味方が攻撃ロールを行った際、リアクションで神性伝導を使用してその判定に+10のボーナスを与える。" },
+              { "level": 8, "name": "信仰込めた打撃", "desc": "各ターンに1回、武器攻撃ヒット時に追加で1d8ダメージ（武器と同じダメージ種別）を与える（14レベルで2d8に増加）。" },
+              { "level": 17, "name": "戦の化身", "desc": "非魔法的な攻撃による［殴打］［刺突］［斬撃］ダメージに対する抵抗を得る。" }
+            ]
+          },
+          {
+            "id": "nature_domain",
+            "name": "自然の領域",
+            "desc": "深い森、泉、野生生物など自然世界とその営みを護り育む神々に仕える領域。",
+            "features": [
+              { "level": 1, "name": "自然のしもべ", "desc": "ドルイドの初級呪文1種を選択して修得（クレリック初級呪文数に含めない）。また、〈自然〉〈生存〉〈動物使い〉から1つの技能習熟を得る。" },
+              { "level": 1, "name": "習熟追加", "desc": "重装鎧の習熟を得る。" },
+              { "level": 2, "name": "神性伝導：動植物魅了", "desc": "アクションで30ft以内の野獣・植物クリーチャーに【判断力】セーヴを強め、失敗した者を1分間（またはダメージを受けるまで）魅了状態にする。" },
+              { "level": 6, "name": "元素力緩和", "desc": "自身または30ft以内の味方が［酸］［電撃］［火］［雷鳴］［冷気］ダメージを受けた際、リアクションでその1回のダメージに対する抵抗を与える。" },
+              { "level": 8, "name": "信仰込めた打撃", "desc": "各ターンに1回、武器攻撃ヒット時に追加で1d8の［電撃］［火］［冷気］のいずれかのダメージを与える（14レベルで2d8に増加）。" },
+              { "level": 17, "name": "大自然の王者", "desc": "「動植物魅了」で魅了中の対象に対し、ボーナス・アクションで命令を与えることができる。" }
+            ]
+          },
+          {
+            "id": "knowledge_domain",
+            "name": "知識の領域",
+            "desc": "学習、理解、発明、古の知識や多元宇宙の秘密を買い求め解き明かす神々に仕える領域。",
+            "features": [
+              { "level": 1, "name": "知識の祝福", "desc": "言語2種を習得。〈自然〉〈宗教〉〈魔法学〉〈歴史〉から2つの技能習熟を得て、その判定には習熟ボーナスが2倍加算される。" },
+              { "level": 2, "name": "神性伝導：万世の知識", "desc": "アクションで任意の1技能または1道具を選択し、10分間その習熟を得る。" },
+              { "level": 6, "name": "神性伝導：読心術", "desc": "60ft以内の敵1体に【判断力】セーヴを強め、1分間表層思考を読む。効果中にアクションで解除することでスロット消費なしで絶対成功のサジェスチョンを発動可能。" },
+              { "level": 8, "name": "初級呪文ダメージ強化", "desc": "クレリックの初級呪文で与えるダメージに【判断力】修正値を加算する。" },
+              { "level": 17, "name": "過去の幻視", "desc": "1分以上の瞑想により、所持した物体の過去の所有者の経緯（物体解析）や、周囲（15m四方）で起きた強い感情を伴う出来事（エリア解析）を幻視する。" }
+            ]
+          },
+          {
+            "id": "light_domain",
+            "name": "光の領域",
+            "desc": "真実、再生、美、警戒を掲げ、日光と聖なる光をもって闇と偽りを払い敵を焼き尽くす領域。",
+            "features": [
+              { "level": 1, "name": "ボーナス初級呪文", "desc": "初級呪文「ライト」を修得する（クレリック初級呪文数に含めない）。" },
+              { "level": 1, "name": "身を守る閃光", "desc": "30ft以内の見えている敵から攻撃された際、リアクションでその攻撃ロールに不利を与える（1日【判断力】修正値回。盲目耐性の敵には無効）。" },
+              { "level": 2, "name": "神性伝導：曙光", "desc": "アクションで30ft以内の魔法の暗闇を解呪し、30ft以内の敵全員に【耐久力】セーヴを強め、 (2d10 + クレリックLv) ［光輝］ダメージ（成功で半減）を与える。" },
+              { "level": 6, "name": "友を守る閃光", "desc": "「身を守る閃光」を、30ft以内の味方が攻撃された際にも割り込んで発動できるようになる。" },
+              { "level": 8, "name": "初級呪文ダメージ強化", "desc": "クレリックの初級呪文で与えるダメージに【判断力】修正値を加算する。" },
+              { "level": 17, "name": "光冠", "desc": "アクションで1分間、周囲18m（60ft）を明るい光で照らすオーラを纏う。範囲内の敵は［光輝］および［火］ダメージのセーヴに不利を受ける。" }
+            ]
+          }
+        ],
+        "features": [
+          { "level": 1, "name": "呪文発動", "desc": "【判断力】を発動能力値としてクレリック呪文を発動できる。焦点具として聖印を使用可能。準備できる呪文数は（【判断力】修正値 + クレリックLv）。儀式発動が可能。" },
+          { "level": 1, "name": "信仰の領域", "desc": "信仰する神の領域を1つ選択し、領域に応じた領域呪文やクラス特徴を得る。" },
+          { "level": 2, "name": "神性伝導", "desc": "神聖なエネルギーを放ち魔法効果を生み出す（小休憩/大休憩で回復）。「アンデッド退散」と領域固有の効果を使用可能。" },
+          { "level": 2, "name": "神性伝導：アンデッド退散", "desc": "アクションで30ft以内のアンデッドに【判断力】セーヴを強いる。失敗した対象は1分間またはダメージを受けるまで退散状態になる。" },
+          { "level": 5, "name": "アンデッド破壊", "desc": "「アンデッド退散」のセーヴに失敗した特定脅威度以下のアンデッドを即座に破壊する（5Lv: CR 1/2以下、8Lv: CR 1以下、11Lv: CR 2以下、14Lv: CR 3以下、17Lv: CR 4以下）。" },
+          { "level": 6, "name": "神性伝導 (2回)", "desc": "休憩間に神性伝導を2回まで使用できるようになる。" },
+          { "level": 10, "name": "神性介入", "desc": "アクションで助けを求めd%をロールする。結果がクレリックLv以下なら神の介入が発生する（成功時は7日間再使用不可、失敗時は大休憩後に再使用可能）。" },
+          { "level": 18, "name": "神性伝導 (3回)", "desc": "休憩間に神性伝導を3回まで使用できるようになる。" },
+          { "level": 20, "name": "神性介入強化", "desc": "神性介入の呼びかけがロールなしで自動的に成功するようになる。" }
+        ]
+      },
+      {
+        "class_id": "fighter",
+        "class_name": "ファイター",
+        "hit_die": 10,
+        "hp_first_level": 10,
+        "hp_subsequent_levels": 6,
+        "caster_type": 0,
+        "saving_throws": ["STR", "CON"],
+        "proficiencies": {
+          "armor": "すべての鎧、盾",
+          "weapons": "単純武器、軍用武器",
+          "tools": "なし"
+        },
+        "skill_choices": {
+          "count": 2,
+          "options": ["威圧", "運動", "軽業", "看破", "生存", "知覚", "動物使い", "歴史"]
+        },
+        "equipment": [
+          "（a）チェイン・メイル、または（b）レザー・アーマー、ロングボウ、アロー20本",
+          "（a）任意の軍用武器1つとシールド1つ、または（b）任意の軍用武器2つ",
+          "（a）ライト・クロスボウとボルト20本、または（b）ハンドアックス2丁",
+          "（a）地下探険家パック、または（b）探険家パック"
+        ],
+        "fighting_styles": [
+          { "id": "archery", "name": "弓術", "desc": "遠隔武器での攻撃ロールに+2のボーナス。" },
+          { "id": "defense", "name": "防護", "desc": "鎧を着ているならACに+1のボーナス。" },
+          { "id": "dueling", "name": "片手武器戦闘", "desc": "片手で1つの近接武器を持ち、他の武器を持っていないならダメージ+2。" },
+          { "id": "great_weapon", "name": "両手武器戦闘", "desc": "両手持ち武器のダメージ・ダイスで1か2が出た際、そのダイスを再ロールできる。" },
+          { "id": "protection", "name": "護衛", "desc": "盾を持っている場合、5ft以内の味方への攻撃に対しリアクションで不利を与えられる。" },
+          { "id": "two_weapon", "name": "二刀流", "desc": "二刀流攻撃の際、二つ目の武器攻撃ダメージにも能力値修正値を加算できる。" }
+        ],
+        "asi_levels": [4, 6, 8, 12, 14, 16, 19],
+        "archetype_level": 3,
+        "archetype_title": "戦士の類型",
+        "archetypes": [
+          {
+            "id": "champion",
+            "name": "チャンピオン",
+            "desc": "純粋な肉体の力を研ぎすまし、破壊的な打撃を与える武勇の類型。",
+            "features": [
+              { "level": 3, "name": "クリティカル率上昇", "desc": "武器攻撃の出目が19〜20でクリティカル・ヒットになる。" },
+              { "level": 7, "name": "抜群の身体能力", "desc": "習熟を得ていない【筋力】【敏捷力】【耐久力】判定に習熟ボーナスの半分（切り上げ）を加算。助走つき幅跳びの距離が増大。" },
+              { "level": 10, "name": "戦闘スタイル追加", "desc": "戦闘スタイル一覧からもう1種類の戦闘スタイルを追加選択できる。" },
+              { "level": 15, "name": "クリティカル率大上昇", "desc": "武器攻撃の出目が18〜20でクリティカル・ヒットになる。" },
+              { "level": 18, "name": "生命力", "desc": "ターン開始時にHPが半分以下の場合、(5 + 耐久力修正値) のHPを自動回復する。" }
+            ]
+          },
+          {
+            "id": "battle_master",
+            "name": "バトル・マスター",
+            "desc": "さまざまな戦術と戦技ダイスを駆使して戦場を支配する戦技の達人。",
+            "features": [
+              { "level": 3, "name": "卓越の戦士", "desc": "4つの戦技ダイス(d8)と3つの戦技を獲得（7,10,15Lvで2つずつ追加習得）。セーヴ難易度: 8 + 習熟ボーナス + STRまたはDEX修正値。" },
+              { "level": 3, "name": "戦人のたしなみ", "desc": "任意の1種類の職人道具に習熟を得る。" },
+              { "level": 7, "name": "敵を知る", "desc": "非戦闘時に対象を1分以上観察することで、能力値やAC、HPなどの格差を把握できる。戦技ダイス+1。" },
+              { "level": 10, "name": "戦技ダイス強化 (d10)", "desc": "戦技ダイスがd8からd10に強化される。" },
+              { "level": 15, "name": "執念の戦技", "desc": "イニシアチブ時に戦技ダイスが0個の場合、1個回復する。戦技ダイス+1。" },
+              { "level": 18, "name": "戦技ダイス強化 (d12)", "desc": "戦技ダイスがd10からd12に強化される。" }
+            ]
+          },
+          {
+            "id": "eldritch_knight",
+            "name": "エルドリッチ・ナイト",
+            "caster_type": 0.3333,
+            "desc": "ファイターの武技とウィザードの防御術・力術を中心とした魔法を組み合わせる秘術騎士。",
+            "features": [
+              { "level": 3, "name": "呪文発動", "desc": "知力を発動能力としてウィザード呪文を使用可能。初級呪文2種と1レベル呪文3種を習得。" },
+              { "level": 3, "name": "武器との絆", "desc": "儀式を行った武器を取り落とさなくなり、ボーナスアクションで瞬時に呼び寄せられる（最大2つ）。" },
+              { "level": 7, "name": "魔法戦士", "desc": "アクションで初級呪文を発動した際、ボーナスアクションで1回の武器攻撃を行える。" },
+              { "level": 10, "name": "魔法戦士の武技", "desc": "武器攻撃をヒットさせた敵は、次の君のターン終了時までに発動する呪文のセーヴに不利を受ける。" },
+              { "level": 15, "name": "怒涛の瞬間移動", "desc": "怒涛のアクション使用時、30ft以内の空いている場所へ瞬間移動できる。" },
+              { "level": 18, "name": "上級魔法戦士", "desc": "アクションで1レベル以上の呪文を発動した際、ボーナスアクションで1回の武器攻撃を行える。" }
+            ]
+          }
+        ],
+        "features": [
+          { "level": 1, "name": "戦闘スタイル", "desc": "専門とする戦闘スタイルを1つ選択し、その効果を得る。" },
+          { "level": 1, "name": "底力", "desc": "ボーナス・アクションで(1d10 + ファイター・レベル)のHPを回復する（小休憩/大休憩で回復）。" },
+          { "level": 2, "name": "怒涛のアクション", "desc": "自分のターンに通常のアクションに加えて、さらに1回のアクションを行なえる（小休憩/大休憩で回復）。" },
+          { "level": 3, "name": "戦士の類型", "desc": "選択した類型の特徴を得る。" },
+          { "level": 5, "name": "追加攻撃", "desc": "自分のターンに攻撃アクションをとるたび、1回ではなく2回の攻撃を行なえる。" },
+          { "level": 9, "name": "不屈", "desc": "失敗したセーヴィング・スローを1回再ロールできる（大休憩で回復）。" },
+          { "level": 11, "name": "追加攻撃 (2)", "desc": "自分のターンに攻撃アクションをとるたび、3回の攻撃を行なえる。" },
+          { "level": 13, "name": "不屈 (2回)", "desc": "不屈を大休憩ごとに2回使用できるようになる。" },
+          { "level": 17, "name": "怒涛のアクション (2回)", "desc": "怒涛のアクションを休憩間に2回使用できるようになる。" },
+          { "level": 17, "name": "不屈 (3回)", "desc": "不屈を大休憩ごとに3回使用できるようになる。" },
+          { "level": 20, "name": "追加攻撃 (3)", "desc": "自分のターンに攻撃アクションをとるたび、4回の攻撃を行なえる。" }
+        ]
+      },
+      {
+        "class_id": "rogue",
+        "class_name": "ローグ",
+        "hit_die": 8,
+        "hp_first_level": 8,
+        "hp_subsequent_levels": 5,
+        "caster_type": 0,
+        "saving_throws": ["DEX", "INT"],
+        "proficiencies": {
+          "armor": "軽装鎧",
+          "weapons": "単純武器、ショートソード、ハンド・クロスボウ、レイピア、ロングソード",
+          "tools": "盗賊道具"
+        },
+        "skill_choices": {
+          "count": 4,
+          "options": ["威圧", "運動", "隠密", "軽業", "看破", "芸能", "説得", "捜査", "知覚", "手先の早業", "ペテン"]
+        },
+        "equipment": [
+          "（a）レイピア、または（b）ショートソード",
+          "（a）ショートボウとアロー20本入りの矢筒、または（b）ショートソード",
+          "（a）泥棒パック、または（b）地下探険家パック、または（c）探険家パック",
+          "レザー・アーマー、ダガー2本、盗賊道具"
+        ],
+        "asi_levels": [4, 8, 10, 12, 16, 19],
+        "archetype_level": 3,
+        "archetype_title": "ローグの類型",
+        "archetypes": [
+          {
+            "id": "thief",
+            "name": "シーフ",
+            "desc": "俊敏性と隠密性を高め、鍵開けや古代遺跡の探索、魔法アイテムの扱いに長けた盗みの達人。",
+            "features": [
+              { "level": 3, "name": "器用な指先", "desc": "巧妙なアクションで〈手先の早業〉判定、盗賊道具での罠解除・解錠、「物体の操作」を行える。" },
+              { "level": 3, "name": "屋根渡り", "desc": "登攀に追加移動コストが不要。助走つき跳躍の距離が【敏捷力】修正値×0.3m(1ft)増加。" },
+              { "level": 9, "name": "隠密無双", "desc": "ターン中に移動速度の半分以下しか移動しない場合、そのターンに行う〈隠密〉判定に有利を得る。" },
+              { "level": 13, "name": "魔法装置使用", "desc": "魔法のアイテムを使用する際、クラス・種族・レベルの条件をすべて無視できる。" },
+              { "level": 17, "name": "神速", "desc": "各戦闘の最初のラウンドに2回のターン（通常イニシアチブとイニシアチブ-10）を得る（不意を討たれている時を除く）。" }
+            ]
+          },
+          {
+            "id": "assassin",
+            "name": "アサシン",
+            "desc": "隠密性、毒物、変装を活用して敵を恐ろしく効率よく排除する暗殺者。",
+            "features": [
+              { "level": 3, "name": "習熟追加", "desc": "調毒道具と変装用具の習熟を得る。" },
+              { "level": 3, "name": "暗殺術", "desc": "まだターンを行っていない敵への攻撃ロールは常に有利。不意を討たれた敵にヒットを与えた場合、常にクリティカル・ヒットとなる。" },
+              { "level": 9, "name": "偽りの素性", "desc": "7日間と25gpをかけて見破られない偽りの素性（来歴、職業、知人など）を作り上げることができる。" },
+              { "level": 13, "name": "なりすまし", "desc": "3時間以上観察した相手の行動パターンを完璧に模倣できる。疑われた際の〈ペテン〉判定に常に有利を得る。" },
+              { "level": 17, "name": "暗殺奥義", "desc": "不意を討たれた敵にヒットを与えた際、目標はCONセーヴ（難易度: 8+DEX修正値+習熟ボーナス）を行う。失敗した場合はダメージが2倍になる。" }
+            ]
+          },
+          {
+            "id": "arcane_trickster",
+            "name": "アーケイン・トリックスター",
+            "caster_type": 0.3333,
+            "desc": "隠密性と俊敏性を魔法（幻術・心術）でさらに強化する秘術使いのいたずら者。",
+            "features": [
+              { "level": 3, "name": "呪文発動", "desc": "知力を発動能力としてウィザード呪文を使用可能（初級呪文に『メイジ・ハンド』を含む）。" },
+              { "level": 3, "name": "欺きのメイジ・ハンド", "desc": "メイジ・ハンドを不可視にでき、スリや遠隔鍵開け/罠解除、ボーナス・アクションでの操作が可能になる。" },
+              { "level": 9, "name": "奇襲魔法", "desc": "隠れている状態から呪文を発動した際、対象のセーヴィング・スローに不利を与える。" },
+              { "level": 13, "name": "多彩ないたずら", "desc": "ボーナス・アクションでメイジ・ハンドから1.5m(5ft)以内の敵を指定し、そのターン中の攻撃ロールに有利を得る。" },
+              { "level": 17, "name": "呪文泥棒", "desc": "自身を対象とする呪文を受けた際、リアクションで相手にセーヴを行わせ、失敗時にその呪文効果を無効化し8時間自分自身がその呪文を使用可能にする（大休憩で回復）。" }
+            ]
+          }
+        ],
+        "features": [
+          { "level": 1, "name": "習熟強化", "desc": "選択した2つの技能（または1技能+盗賊道具）の判定時、習熟ボーナスが2倍になる。" },
+          { "level": 1, "name": "急所攻撃", "desc": "1ターンに1回、有利を得た妙技/遠隔武器の攻撃（または味方が敵5ft以内にいる場合）で追加ダメージ1d6を与える。" },
+          { "level": 1, "name": "盗賊の符牒", "desc": "ローグ同士で秘密の会話や暗号・合図を用いて情報を伝達・解読できる。" },
+          { "level": 2, "name": "巧妙なアクション", "desc": "毎ターン、ボーナス・アクションで「隠れ身」「早足」「離脱」を行える。" },
+          { "level": 3, "name": "ローグの類型", "desc": "選択した類型の特徴を得る。急所攻撃のダメージ2d6。" },
+          { "level": 5, "name": "直感回避", "desc": "視界内の敵から攻撃がヒットした際、リアクションを用いてダメージを半分に軽減できる。急所攻撃のダメージ3d6。" },
+          { "level": 6, "name": "習熟強化（追加）", "desc": "さらに2種類の技能または道具習熟を選択し、習熟ボーナスを2倍にする。" },
+          { "level": 7, "name": "身かわし", "desc": "DEXセーヴ成功でダメージ半分の効果に対し、成功時に「ダメージなし」、失敗時でも「半分」に抑える。急所攻撃のダメージ4d6。" },
+          { "level": 9, "name": "急所攻撃強化", "desc": "急所攻撃のダメージ5d6。" },
+          { "level": 11, "name": "確かな技術", "desc": "習熟ボーナスを加算できる能力値判定で、d20ロールの9以下の目を10として扱う。急所攻撃のダメージ6d6。" },
+          { "level": 13, "name": "急所攻撃強化", "desc": "急所攻撃のダメージ7d6。" },
+          { "level": 14, "name": "非視覚的感知", "desc": "音を聞き取れる限り、10ft以内の隠れている/不可視状態のクリーチャーの位置を把握できる。" },
+          { "level": 15, "name": "囚われぬ心", "desc": "【判断力】セーヴィング・スローへの習熟を得る。急所攻撃のダメージ8d6。" },
+          { "level": 17, "name": "急所攻撃強化", "desc": "急所攻撃のダメージ9d6。" },
+          { "level": 18, "name": "捕捉不能", "desc": "自分が無力状態でない限り、敵からの攻撃ロールは決して有利を得られない。" },
+          { "level": 19, "name": "急所攻撃強化", "desc": "急所攻撃のダメージ10d6。" },
+          { "level": 20, "name": "幸運児", "desc": "攻撃のミスをヒットに変更、または能力値判定のミス時に出目を20として扱える（小休憩/大休憩で回復）。" }
+        ]
+      }
+    ];
+
+    const multiclassSpellSlotsTable = [
+      [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0],
+      [4,3,3,0,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], [4,3,3,2,0,0,0,0,0], [4,3,3,3,1,0,0,0,0], [4,3,3,3,2,0,0,0,0],
+      [4,3,3,3,2,1,0,0,0], [4,3,3,3,2,1,0,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,1,0],
+      [4,3,3,3,2,1,1,1,0], [4,3,3,3,2,1,1,1,1], [4,3,3,3,3,1,1,1,1], [4,3,3,3,3,2,1,1,1], [4,3,3,3,3,2,2,1,1]
+    ];
+
+    const selectedArchetypes = {};
+    let subClassCount = 0;
+
+    const app = document.getElementById('app');
+    const conModInput = document.getElementById('con-mod');
+    const searchInput = document.getElementById('search-input');
+
+    function initFilters() {
+      const primarySelect = document.getElementById('primary-class');
+      const primaryLvlSelect = document.getElementById('primary-class-lvl');
+      
+      classData.forEach(c => {
+        const optionP = document.createElement('option');
+        optionP.value = c.class_id;
+        optionP.textContent = c.class_name;
+        primarySelect.appendChild(optionP);
+
+        selectedArchetypes[c.class_id] = '';
+      });
+
+      primaryLvlSelect.innerHTML = '';
+      for (let i = 1; i <= 20; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Lv ${i}`;
+        if (i === 1) opt.selected = true;
+        primaryLvlSelect.appendChild(opt);
+      }
+    }
+
+    window.addSubClassRow = function() {
+      subClassCount++;
+      const container = document.getElementById('subclasses-container');
+      const row = document.createElement('div');
+      row.className = 'class-row sub-class-row';
+      row.id = `sub-row-${subClassCount}`;
+
+      let classOptions = '<option value="">-- 選択してください --</option>';
+      classData.forEach(c => {
+        classOptions += `<option value="${c.class_id}">${c.class_name}</option>`;
+      });
+
+      let levelOptions = '';
+      for (let i = 1; i <= 20; i++) {
+        levelOptions += `<option value="${i}">Lv ${i}</option>`;
+      }
+
+      row.innerHTML = `
+        <span class="row-label" style="color:var(--badge-text);">副クラス</span>
+        <select class="sub-class-id" onchange="handleMulticlassChange()">${classOptions}</select>
+        <label style="margin-left:8px; margin-bottom:0;">Lv:</label>
+        <select class="sub-class-lvl" onchange="handleMulticlassChange()">${levelOptions}</select>
+        <button type="button" class="btn btn-danger" style="margin-left:8px;" onclick="removeSubClassRow('${row.id}')">削除</button>
+      `;
+      container.appendChild(row);
+      handleMulticlassChange();
+    };
+
+    window.removeSubClassRow = function(rowId) {
+      const row = document.getElementById(rowId);
+      if (row) row.remove();
+      handleMulticlassChange();
+    };
+
+    function getMulticlassConfig() {
+      const primaryId = document.getElementById('primary-class').value;
+      const primaryLvl = parseInt(document.getElementById('primary-class-lvl').value, 10) || 1;
+
+      if (!primaryId) {
+        return { isMulticlassActive: false, primaryId: '', totalLevel: 0, classes: {}, subClasses: {} };
+      }
+
+      const classes = {};
+      const subClasses = {};
+      classes[primaryId] = primaryLvl;
+
+      const subRows = document.querySelectorAll('.sub-class-row');
+      subRows.forEach(row => {
+        const subId = row.querySelector('.sub-class-id').value;
+        const subLvl = parseInt(row.querySelector('.sub-class-lvl').value, 10) || 1;
+        if (subId) {
+          classes[subId] = (classes[subId] || 0) + subLvl;
+          subClasses[subId] = (subClasses[subId] || 0) + subLvl;
+        }
+      });
+
+      let totalLevel = 0;
+      Object.values(classes).forEach(lvl => totalLevel += lvl);
+
+      return {
+        isMulticlassActive: true,
+        primaryId,
+        totalLevel,
+        classes,
+        subClasses
+      };
+    }
+
+    window.handleMulticlassChange = function() {
+      const config = getMulticlassConfig();
+      const summaryCard = document.getElementById('summary-card');
+      const conMod = parseInt(conModInput.value, 10) || 0;
+
+      if (config.isMulticlassActive) {
+        summaryCard.style.display = 'block';
+
+        document.getElementById('summary-total-lvl').textContent = `Lv ${config.totalLevel}`;
+        const profBonus = Math.ceil(1 + (config.totalLevel / 4));
+        document.getElementById('summary-prof-bonus').textContent = `+${profBonus}`;
+
+        let totalHp = 0;
+        Object.entries(config.classes).forEach(([cId, cLvl]) => {
+          const cls = classData.find(c => c.class_id === cId);
+          if (cls && cLvl > 0) {
+            if (cId === config.primaryId) {
+              totalHp += cls.hp_first_level + (cls.hp_subsequent_levels * (cLvl - 1));
+            } else {
+              totalHp += cls.hp_subsequent_levels * cLvl;
+            }
+          }
+        });
+        totalHp += conMod * config.totalLevel;
+        document.getElementById('summary-total-hp').textContent = totalHp;
+
+        let casterLvlSum = 0;
+        Object.entries(config.classes).forEach(([cId, cLvl]) => {
+          const cls = classData.find(c => c.class_id === cId);
+          if (cls) {
+            let type = cls.caster_type || 0;
+            const selectedArch = selectedArchetypes[cId];
+            if (selectedArch === 'eldritch_knight' || selectedArch === 'arcane_trickster') {
+              type = 0.3333;
+            }
+            casterLvlSum += cLvl * type;
+          }
+        });
+
+        const effectiveCasterLvl = Math.floor(casterLvlSum);
+        const casterLvlEl = document.getElementById('summary-caster-lvl');
+        const slotsContainer = document.getElementById('multiclass-spell-slots');
+        const slotsRow = document.getElementById('multiclass-slots-row');
+
+        if (effectiveCasterLvl > 0) {
+          casterLvlEl.textContent = `Lv ${effectiveCasterLvl}`;
+          slotsContainer.style.display = 'block';
+          const slots = multiclassSpellSlotsTable[Math.min(effectiveCasterLvl, 20) - 1];
+          slotsRow.innerHTML = slots.map(s => `<td>${s > 0 ? s : '―'}</td>`).join('');
+        } else {
+          casterLvlEl.textContent = "なし";
+          slotsContainer.style.display = 'none';
+        }
+
+      } else {
+        summaryCard.style.display = 'none';
+      }
+
+      render();
+    };
+
+    function highlightText(text, queries) {
+      if (!queries || queries.length === 0 || !text) return text;
+      const pattern = queries
+        .filter(q => q.length > 0)
+        .map(q => q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|');
+      if (!pattern) return text;
+      const regex = new RegExp(`(${pattern})`, 'gi');
+      return text.replace(regex, '<mark>$1</mark>');
+    }
+
+    function createFeatureRows(features, maxLevel, rawQuery) {
+      const queries = rawQuery ? rawQuery.trim().toLowerCase().split(/\s+/).filter(Boolean) : [];
+      return features
+        .filter(f => {
+          if (f.level > maxLevel) return false;
+          if (queries.length === 0) return true;
+          const targetText = (f.name + ' ' + f.desc).toLowerCase();
+          return queries.every(q => targetText.includes(q));
+        })
+        .map(f => {
+          return `
+            <tr>
+              <td class="level-col">${f.level}</td>
+              <td class="name-col">${highlightText(f.name, queries)}</td>
+              <td>${highlightText(f.desc, queries)}</td>
+            </tr>
+          `;
+        }).join('');
+    }
+
+    window.handleArchetypeChange = function(classId, value) {
+      selectedArchetypes[classId] = value;
+      handleMulticlassChange();
+    };
+
+    function render() {
+      const config = getMulticlassConfig();
+      const conMod = parseInt(conModInput.value, 10) || 0;
+      const query = searchInput.value.trim().toLowerCase();
+
+      app.innerHTML = '';
+      let hasResults = false;
+
+      classData.forEach(c => {
+        // ★修正点: 選択されていないクラス（Levelが0以下）は画面に一切描画しない
+        const currentLevel = config.classes[c.class_id] || 0;
+        if (currentLevel <= 0) {
+          return;
+        }
+
+        const selectedArchetypeId = selectedArchetypes[c.class_id] || '';
+        const selectedArchetype = c.archetypes.find(a => a.id === selectedArchetypeId);
+
+        let combinedFeatures = [...c.features];
+        if (selectedArchetype) {
+          const archetypeFeatures = selectedArchetype.features.map(f => ({
+            ...f,
+            name: `${f.name}<br>[${selectedArchetype.name}]`
+          }));
+          combinedFeatures = combinedFeatures.concat(archetypeFeatures);
+        }
+        combinedFeatures.sort((a, b) => a.level - b.level);
+
+        const baseRows = createFeatureRows(combinedFeatures, currentLevel, query);
+
+        const archetypeHtmls = c.archetypes.map(a => {
+          const rows = createFeatureRows(a.features, currentLevel, query);
+          if (!rows && query) return null;
+          return { id: a.id, name: a.name, desc: a.desc, rows: rows };
+        }).filter(Boolean);
+
+        let stylesHtml = '';
+        if (c.fighting_styles) {
+          const queries = query ? query.trim().toLowerCase().split(/\s+/).filter(Boolean) : [];
+          const filteredStyles = c.fighting_styles.filter(s => {
+            if (queries.length === 0) return true;
+            return queries.every(q => (s.name + ' ' + s.desc).toLowerCase().includes(q));
+          });
+          if (filteredStyles.length > 0) {
+            stylesHtml = filteredStyles.map(s => `
+              <tr>
+                <td class="level-col">1</td>
+                <td class="name-col">[スタイル] ${highlightText(s.name, queries)}</td>
+                <td>${highlightText(s.desc, queries)}</td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        hasResults = true;
+
+        const section = document.createElement('div');
+        section.className = 'class-section';
+
+        const metaInfo = `<span class="meta-badge">能力値上昇Lv: ${c.asi_levels.join(', ')}</span>`;
+        
+        let hpLabel = "体力";
+        let hpValStr = "―";
+
+        if (c.class_id === config.primaryId) {
+          hpLabel = "主クラス体力";
+          const hpVal = c.hp_first_level + conMod + (c.hp_subsequent_levels + conMod) * Math.max(0, currentLevel - 1);
+          hpValStr = `${hpVal}`;
+        } else if (config.subClasses && config.subClasses[c.class_id]) {
+          hpLabel = "副クラス体力";
+          const hpVal = (c.hp_subsequent_levels + conMod) * currentLevel;
+          hpValStr = `${hpVal}`;
+        }
+
+        const hitDiceStr = `${currentLevel}d${c.hit_die}`;
+
+        let spellcastingInfoHtml = '';
+        if (c.class_id === 'wizard') {
+          spellcastingInfoHtml = `
+            <div class="base-info-item full-width">呪文のセーヴ難易度： <span>8 ＋ 習熟ボーナス ＋ 知力修正値</span></div>
+            <div class="base-info-item full-width">呪文攻撃の修正値： <span>習熟ボーナス ＋ 知力修正値</span></div>
+            <div class="base-info-item full-width">準備呪文の数： <span>知力修正値 ＋ ウィザード・レベル</span></div>
+          `;
+        } else if (c.class_id === 'cleric') {
+          spellcastingInfoHtml = `
+            <div class="base-info-item full-width">呪文のセーヴ難易度： <span>8 ＋ 習熟ボーナス ＋ 判断力修正値</span></div>
+            <div class="base-info-item full-width">呪文攻撃の修正値： <span>習熟ボーナス ＋ 判断力修正値</span></div>
+            <div class="base-info-item full-width">準備呪文の数： <span>判断力修正値 ＋ クレリック・レベル</span></div>
+          `;
+        }
+
+        const archetypeOptionsHtml = `
+          <option value="" ${selectedArchetypeId === '' ? 'selected' : ''}>基本特徴のみ</option>
+          ${c.archetypes.map(a => `<option value="${a.id}" ${a.id === selectedArchetypeId ? 'selected' : ''}>${a.name}</option>`).join('')}
+        `;
+
+        const baseInfoPanel = `
+          <div class="base-info-panel">
+            <div class="base-info-grid">
+              <div class="base-info-item">${hpLabel}: <span>${hpValStr}</span></div>
+              <div class="base-info-item">ヒット・ダイス： <span>${hitDiceStr}</span></div>
+              <div class="base-info-item">習熟セーヴ： <span>${c.saving_throws.join(', ')}</span></div>
+              <div class="base-info-item">鎧習熟： <span>${c.proficiencies ? c.proficiencies.armor : '―'}</span></div>
+              <div class="base-info-item">武器習熟： <span>${c.proficiencies ? c.proficiencies.weapons : '―'}</span></div>
+              <div class="base-info-item">道具習熟： <span>${c.proficiencies ? c.proficiencies.tools : '―'}</span></div>
+              <div class="base-info-item full-width">技能一覧： 次の中から<span>${c.skill_choices.count}</span>個選択 (${c.skill_choices.options.join('、')})</div>
+              ${spellcastingInfoHtml}
+            </div>
+          </div>
+        `;
+
+        let tabsNav = `<button class="tab-button active" onclick="switchTab(event, '${c.class_id}', 'base')">基本特徴</button>`;
+        if (stylesHtml) {
+          tabsNav += `<button class="tab-button" onclick="switchTab(event, '${c.class_id}', 'styles')">戦闘スタイル</button>`;
+        }
+        archetypeHtmls.forEach(a => {
+          tabsNav += `<button class="tab-button" onclick="switchTab(event, '${c.class_id}', '${a.id}')">${a.name}</button>`;
+        });
+
+        let tabsContent = `
+          <div id="${c.class_id}-base" class="tab-content active">
+            ${baseInfoPanel}
+            <table>
+              <thead>
+                <tr>
+                  <th>Lv</th>
+                  <th>特徴名</th>
+                  <th>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                      <span>効果・解説</span>
+                      <div style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem;">
+                        <label for="archetype-select-${c.class_id}" style="margin: 0; color: var(--text-muted); white-space: nowrap;">追加表示(${c.archetype_title}):</label>
+                        <select id="archetype-select-${c.class_id}" onchange="handleArchetypeChange('${c.class_id}', this.value)" onclick="event.stopPropagation()" style="padding: 4px 8px; font-size: 0.85rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px;">
+                          ${archetypeOptionsHtml}
+                        </select>
+                      </div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>${baseRows || '<tr><td colspan="3" class="no-results">このレベル以下で取得可能な特徴はありません</td></tr>'}</tbody>
+            </table>
+          </div>
+        `;
+
+        if (stylesHtml) {
+          tabsContent += `
+            <div id="${c.class_id}-styles" class="tab-content">
+              <table>
+                <thead><tr><th>Lv</th><th>スタイル名</th><th>効果・解説</th></tr></thead>
+                <tbody>${stylesHtml}</tbody>
+              </table>
+            </div>
+          `;
+        }
+
+        archetypeHtmls.forEach(a => {
+          tabsContent += `
+            <div id="${c.class_id}-${a.id}" class="tab-content">
+              <div class="archetype-desc">${a.desc}</div>
+              <table>
+                <thead><tr><th>Lv</th><th>特徴名</th><th>効果・解説</th></tr></thead>
+                <tbody>${a.rows || '<tr><td colspan="3" class="no-results">このレベル以下で取得可能な特徴はありません</td></tr>'}</tbody>
+              </table>
+            </div>
+          `;
+        });
+
+        section.innerHTML = `
+          <div class="class-header">
+            <h2 class="class-title">${c.class_name} <span style="font-size:1rem;">(Lv ${currentLevel})</span></h2>
+            <div class="class-meta">${metaInfo}</div>
+          </div>
+          <div class="tab-container">${tabsNav}</div>
+          ${tabsContent}
+        `;
+
+        app.appendChild(section);
+      });
+
+      if (!hasResults) {
+        app.innerHTML = '<div class="no-results">主クラスまたは副クラスを選択してください。</div>';
+      }
+    }
+
+    window.switchTab = function(event, classId, tabType) {
+      const container = event.target.closest('.class-section');
+      container.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      container.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      const targetTab = container.querySelector(`#${classId}-${tabType}`);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+    };
+
+    conModInput.addEventListener('input', handleMulticlassChange);
+    searchInput.addEventListener('input', render);
+
+    initFilters();
+    handleMulticlassChange();
+  </script>
+</body>
+</html>
