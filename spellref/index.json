@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D 5e 呪文検索</title>
+  <style>
+    :root {
+      --primary-color: #7b1113;
+      --primary-hover: #5a0c0e;
+      --bg-color: #f4f1ea;
+      --card-bg: #fffbf5;
+      --border-color: #d3c4a9;
+      --text-color: #2b2521;
+      --muted-text: #665c54;
+      --tag-bg: #e8dfd1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", "Georgia", serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: 15px;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+    }
+
+    /* 検索・フィルタセクション */
+    .filter-section {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-group {
+      margin-bottom: 15px;
+    }
+
+    .filter-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-label {
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: block;
+      color: var(--primary-color);
+      font-size: 0.95rem;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: #fff;
+      font-family: inherit;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .checkbox-btn {
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-btn input {
+      display: none;
+    }
+
+    .checkbox-btn span {
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      background-color: #fff;
+      color: var(--text-color);
+      transition: all 0.2s ease;
+    }
+
+    .checkbox-btn input:checked + span {
+      background-color: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+
+    .result-info {
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      color: var(--muted-text);
+      text-align: right;
+    }
+
+    /* 呪文カード */
+    .spell-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .spell-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-left: 5px solid var(--primary-color);
+      border-radius: 6px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .spell-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .spell-name-container {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .spell-name {
+      font-size: 1.4rem;
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    .spell-en-name {
+      font-size: 0.9rem;
+      color: var(--muted-text);
+      font-style: italic;
+    }
+
+    .spell-meta {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--muted-text);
+    }
+
+    .spell-details {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(200px, 1fr));
+      gap: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      background-color: rgba(211, 196, 169, 0.2);
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+
+    .card-large {
+      grid-column: 1 / -1;
+    }
+
+    .classes-tags {
+      margin-bottom: 12px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .class-tag {
+      background-color: var(--tag-bg);
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--text-color);
+    }
+
+    .spell-description {
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+
+    .spell-higher {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+      font-size: 0.9rem;
+      color: #4a3b32;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted-text);
+    }
+
+    /* 強調表示（ハイライト）用スタイル */
+    .hl {
+      font-weight: bold;
+    }
+    .hl-dice {
+      color: #b01010;
+    }
+    .hl-damage {
+      color: #9c4221;
+    }
+    .hl-save {
+      color: #0d5c75;
+      background-color: #e6f7ff;
+      border: 1px solid #91d5ff;
+    }
+    .hl-attack {
+      color: #5b21b6;
+      background-color: #f3e8ff;
+      border: 1px solid #d8b4fe;
+    }
+    .hl-range {
+      color: #15803d;
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>D&D 5e 呪文検索</h1>
+    </header>
+
+    <div class="filter-section">
+      <!-- フリーテキスト検索 -->
+      <div class="filter-group">
+        <label class="filter-label" for="searchInput">キーワード検索（名前・英語名・解説）</label>
+        <input type="text" id="searchInput" class="search-input" placeholder="例: ボルト、ダメージ、魅了...">
+      </div>
+
+      <!-- レベル選択 (複数可) -->
+      <div class="filter-group">
+        <span class="filter-label">呪文レベル</span>
+        <div class="checkbox-group" id="levelFilters">
+          <label class="checkbox-btn">
+            <input type="checkbox" value="all" id="levelAll" checked>
+            <span>すべて</span>
+          </label>
+          <!-- レベル1〜9はJavaScriptで自動生成、または固定記述 -->
+          <label class="checkbox-btn"><input type="checkbox" class="level-cb" value="0"><span>初級呪文</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="level-cb" value="1"><span>1レベル</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="level-cb" value="2"><span>2レベル</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="level-cb" value="3"><span>3レベル</span></label>
+        </div>
+      </div>
+
+      <!-- クラス選択 (複数可) -->
+      <div class="filter-group">
+        <span class="filter-label">クラス</span>
+        <div class="checkbox-group" id="classFilters">
+          <label class="checkbox-btn">
+            <input type="checkbox" value="all" id="classAll" checked>
+            <span>すべて</span>
+          </label>
+          <!-- 主要クラス -->
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="ウィザード"><span>ウィザード</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="ウォーロック"><span>ウォーロック</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="クレリック"><span>クレリック</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="ソーサラー"><span>ソーサラー</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="バード"><span>バード</span></label>
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="パラディン"><span>パラディン</span></label>
+
+          <label class="checkbox-btn"><input type="checkbox" class="class-cb" value="レンジャー"><span>レンジャー</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-info" id="resultCount"></div>
+
+    <main class="spell-grid" id="spellList"></main>
+  </div>
+
+  <script>
+    // 埋め込みJSONデータ
+    const spellsData = [
+  {
+    "id": "acid-splash",
+    "name": {
+      "ja": "アシッド・スプラッシュ",
+      "en": "Acid Splash",
+      "altJa": "酸の飛沫"
+    },
+    "level": 0,
+    "school": "召喚術",
+    "classes": [
+      "ウィザード",
+      "ソーサラー"
+    ],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は酸のあぶくを投げつける。射程内にいて君から見えるクリーチャー1体、または射程内にいて君から見えかつ互いに5フィート（約1.5m）以内にいるクリーチャー2体を選択すること。目標は【敏捷力】セーヴィング・スローを行なわねばならず、失敗すると1d6の［酸］ダメージを受ける。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d6ずつ増加する、すなわち5レベルで2d6、11レベルで3d6、17レベルで4d6である。"
+  },
+  {
+    "id": "vicious-mockery",
+    "name": {
+      "ja": "ヴィシャス・モッカリィ",
+      "en": "Vicious Mockery",
+      "altJa": "悪意ある嘲り"
+    },
+    "level": 0,
+    "school": "心術",
+    "classes": [
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は射程内の君から見えるクリーチャー1体に、密かな心術の魔力で彩られた罵詈雑言を吐きかける。目標が君の声を聞くことができるなら（君の言葉を理解できる必要はない）、目標は【判断力】セーヴを行なわねばならない。失敗した目標は1d4［精神］ダメージを受け、目標自身の次のターンの終了時までに行なう次の1回の攻撃ロールに不利を受ける。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d4ずつ増加する、すなわち5レベルで2d4、11レベルで3d4、17レベルで4d4である。"
+  },
+  {
+    "id": "eldritch-blast",
+    "name": {
+      "ja": "エルドリッチ・ブラスト",
+      "en": "Eldritch Blast",
+      "altJa": "怪光線"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "ウォーロック"
+    ],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "射程内のクリーチャー1体めがけて、バチバチと鳴るエネルギー光線が放たれる。目標に対して1回の遠隔呪文攻撃を行なうこと。これがヒットすると目標は1d10［力場］ダメージを受ける。",
+    "higherLevels": "この呪文は君のレベルが特定の値に上昇するごとに追加の光線を作り出す、すなわち5レベルで2本、11レベルで3本、17レベルで4本である。君はこれらの光線を同一の目標に向けてもよいし、別々の目標に向けてもよい。光線1本ごとに別々の攻撃ロールを行なうこと。"
+  },
+  {
+    "id": "guidance",
+    "name": {
+      "ja": "ガイダンス",
+      "en": "Guidance",
+      "altJa": "導き"
+    },
+    "level": 0,
+    "school": "占術",
+    "classes": [
+      "クレリック",
+      "ドルイド"
+    ],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "1体の同意するクリーチャーに接触する。呪文が終了する前に1回、目標は自身が選んだ1回の能力値判定に対し、1d4をロールして出た目を加算することができる。このダイスをロールするかどうかの選択は、能力値判定を行なう前でも後でも良い。1d4をロールした時点でこの呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "shillelagh",
+    "name": {
+      "ja": "シャレイリ",
+      "en": "Shillelagh",
+      "altJa": "棍棒"
+    },
+    "level": 0,
+    "school": "変成術",
+    "classes": [
+      "ドルイド"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "ヤドリギ、シャムロックの葉1枚、クラブまたはクオータースタッフ1本"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "君が持っている1本のクラブまたはクオータースタッフの木材に大自然の力が宿る。持続時間中、君はその武器を使って近接攻撃を行なう際の攻撃ロールとダメージ・ロールに、【筋力】の代わりに君の呪文発動能力値を用いることができ、さらにその武器のダメージ・ダイスは1d8になる。加えて、この武器は（すでに魔法の武器でない限り）魔法の武器になる。君がこの呪文を再び発動するか、この武器から手を放した時点で、この呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "shocking-grasp",
+    "name": {
+      "ja": "ショッキング・グラスプ",
+      "en": "Shocking Grasp",
+      "altJa": "電撃の手"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "ウィザード",
+      "ソーサラー"
+    ],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は手から電撃を放ち、触れたクリーチャー1体に衝撃をもたらす。目標に対して近接呪文攻撃を行なうこと。目標が金属製の鎧を着用しているならば、君はこの攻撃ロールに有利を得る。ヒットしたなら、目標は1d8の［電撃］ダメージを受け、次のその目標のターン開始時までリアクションを取ることができなくなる。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d8ずつ増加する、すなわち5レベルで2d8、11レベルで3d8、17レベルで4d8である。"
+  },
+  {
+    "id": "spare-the-dying",
+    "name": {
+      "ja": "スペア・ザ・ダイイング",
+      "en": "Spare the Dying",
+      "altJa": "救命措置"
+    },
+    "level": 0,
+    "school": "死霊術",
+    "classes": [
+      "クレリック"
+    ],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君はヒット・ポイントが0になっている、生きているクリーチャー1体に接触する。そのクリーチャーは容体安定化する。この呪文はアンデッドや人造クリーチャーにはなんの効果ももたらさない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "sacred-flame",
+    "name": {
+      "ja": "セイクリッド・フレイム",
+      "en": "Sacred Flame",
+      "altJa": "聖なる炎"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "クレリック"
+    ],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "射程内の君が見ることができるクリーチャー1体に対し、天から炎のような輝きが降り注ぐ。目標は【敏捷力】セーヴィング・スローを行なわねばならず、失敗すると1d8の［光輝］ダメージを受ける。目標はこのセーヴィング・スローに対しては遮蔽から利益を得ることができない。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d8ずつ増加する、すなわち5レベルで2d8、11レベルで3d8、17レベルで4d8である。"
+  },
+  {
+    "id": "thaumaturgy",
+    "name": {
+      "ja": "ソーマタージー",
+      "en": "Thaumaturgy",
+      "altJa": "小奇跡"
+    },
+    "level": 0,
+    "school": "変成術",
+    "classes": [
+      "クレリック"
+    ],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "最大1分まで"
+    },
+    "description": "君は射程内に、小さな不思議、超自然的な力の現れを発現させる。射程内に以下の魔法効果の1つを生み出す。\n・1分間、君の声を通常の3倍の音量に増幅する。\n・1分間、炎を揺らめかせたり、パチパチと爆ぜさせたり、明るくしたり、薄暗くしたり、あるいは色を変えたりする。\n・1分間、地面を無害な振動で震わせる。\n・距離内の君が選んだ一点を起点として、雷の轟音、カラスの鳴き声、あるいは不吉な囁き声といった、一瞬の音を作り出す。\n・瞬間的に、錠の掛かっていない扉や窓を勢いよく開けたり、バタンと閉めたりする。\n・1分間、君の両眼の外見を変化させる。\nこの呪文を複数回発動した場合、この呪文の効果のうち1分間持続するものについては、同時に最大で3つまで稼働させ続けることができる。君は1回のアクションでそれらの効果のうち1つを終わらせることができる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "dancing-lights",
+    "name": {
+      "ja": "ダンシング・ライツ",
+      "en": "Dancing Lights",
+      "altJa": "踊る灯"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "ウィザード",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "燐かセイヨウハルニレのかけら、またはツチボタル1匹"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "最大4つまでの松明ほどの大きさの明かりを射程内に作り出す。それらは松明やランタン、白熱した光の球体のように見せることができ、持続時間中は空中に浮かんでいる。これら4つの光を組み合わせて1つのおぼろげな中型サイズの人型をした明かりを作る事もできる。どの形を選択したにしろ、それぞれの明かりは半径10フィート（約3m）以内を“薄暗い”明るさに照らす。\n君は自分のターンにボーナス・アクションとして、これらの明かりを射程内の新たな地点へと最大60フィート（約18m）まで移動させることができる。この呪文で作り出された明かりはどれも、他のいずれかの明かりから20フィート（約6m）以内に無ければならない。また、呪文の射程距離から外れた明かりは瞬いて消える。",
+    "higherLevels": ""
+  },
+  {
+    "id": "chill-touch",
+    "name": {
+      "ja": "チル・タッチ",
+      "en": "Chill Touch",
+      "altJa": "負力の接触"
+    },
+    "level": 0,
+    "school": "死霊術",
+    "classes": [
+      "ウィザード",
+      "ウォーロック",
+      "ソーサラー"
+    ],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1ラウンド"
+    },
+    "description": "君は射程内の1体のクリーチャーのスペース内に、幽霊じみた骸骨の手を1つ作り出す。墓場の悪寒でそのクリーチャーを苛むべく、1回の遠隔呪文攻撃を行なうこと。ヒットした場合、目標は1d8［死霊］ダメージを受けた上、次の君のターンの開始時まで目標に骸骨の手がしがみつき、目標はhpを回復できなくなる。\nアンデッドを目標としてヒットを与えた場合、目標はさらに、次の君のターンの開始時まで君に対する攻撃ロールに不利を被る。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d8ずつ増加する、すなわち5レベルで2d8、11レベルで3d8、17レベルで4d8である。"
+  },
+  {
+    "id": "true-strike",
+    "name": {
+      "ja": "トゥルー・ストライク",
+      "en": "True Strike",
+      "altJa": "百発百中"
+    },
+    "level": 0,
+    "school": "占術",
+    "classes": [
+      "ウィザード",
+      "ウォーロック",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": false,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1ラウンドまで"
+    },
+    "description": "君は片手を伸ばし、射程内の目標1体を指さす。この魔法は君に目標の防御に関する瞬間的な洞察をもたらす。君の次のターンにおいて、君は目標に対する1回目の攻撃ロールに有利を得る（その時までこの呪文が持続している場合に限る）。",
+    "higherLevels": ""
+  },
+  {
+    "id": "druidcraft",
+    "name": {
+      "ja": "ドルイドクラフト",
+      "en": "Druidcraft",
+      "altJa": "ドルイド術"
+    },
+    "level": 0,
+    "school": "変成術",
+    "classes": [
+      "ドルイド"
+    ],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は大自然の精霊たちに囁きかけ、射程内に以下のいずれか1つの効果を作り出す。\n・小さく無害な感覚的効果を1つ作る。この効果は現在地の24時間以内の天候を予測る。たとえば快晴なら金色の球体が現れ、雨なら雲が生じ、雪なら雪片が舞い落る、などだ。この効果は1ラウンド持続する。\n・即座に1つの花を咲かせるか、1つの種を発芽させるか、1つの葉芽を芽吹かせる。\n・葉が落ちる、そよ風が吹く、小動物の鳴き声がする、かすかにスカンクの臭いが漂うなど、瞬間的で無害な感覚的効果を1つ生じさせる。この効果の大きさは一辺5フィート（約1.5m）の立方体を越えない。\n・1つのロウソク、松明、または小さな焚火の火をつけるか消す。",
+    "higherLevels": ""
+  },
+  {
+    "id": "fire-bolt",
+    "name": {
+      "ja": "ファイアー・ボルト",
+      "en": "Fire Bolt",
+      "altJa": "炎の矢"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "ウィザード",
+      "ソーサラー"
+    ],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は炎の粒を射程内のクリーチャー1体、あるいは物体1つに投げつける。目標に対して遠隔呪文攻撃を行なうこと。ヒットしたなら、目標は1d10の［火］ダメージを受ける。この呪文がヒットした可燃性の物体は、着用されていたり運搬されているのでない限り着火する。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d10ずつ増加する、すなわち5レベルで2d10、11レベルで3d10、17レベルで4d10である。"
+  },
+  {
+    "id": "prestidigitation",
+    "name": {
+      "ja": "プレスティディジテイション",
+      "en": "Prestidigitation",
+      "altJa": "奇術"
+    },
+    "level": 0,
+    "school": "変成術",
+    "classes": [
+      "ウィザード",
+      "ウォーロック",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "10フィート（約3m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "最大1時間"
+    },
+    "description": "この呪文は駆け出しの呪文使いが練習のために使う簡単な手品である。射程内に以下の魔法効果の1つを生み出す。\n・火花のシャワー、一吹きの風、かすかな音楽、奇妙な臭いといった無害で瞬間的な知覚を作り出す。\n・瞬間的に1つのロウソク、松明、あるいは小さな焚火の火を点けたり、消したりする。\n・1立方フィート（約28.3リットル）以下のアイテムを瞬間的にきれいにしたり、汚したりする。\n・1時間、1ポンド（約0.5㎏）までの重さの生きていない物質を冷やしたり、温めたり、風味を付けたりする。\n・1時間、1つの物品や何かの表面に色を付けたり、小さなマークを付けたり、あるいは紋章を付けたりする。\n・何もない所から、君の次のターンの終了時まで持続する、片手におさまる小さな非魔法のガラクタ道具を作り出したり、幻の映像を作り出したりする。\nこの呪文を複数回発動した場合、この呪文の効果のうち瞬間的でないものについては、同時に最大3つまで稼働させ続けることができる。君は1回のアクションでそれらの効果のうち1つを終わらせることができる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "produce-flame",
+    "name": {
+      "ja": "プロデュース・フレイム",
+      "en": "Produce Flame",
+      "altJa": "火炎作成"
+    },
+    "level": 0,
+    "school": "召喚術",
+    "classes": [
+      "ドルイド"
+    ],
+    "castingTime": "1アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "10分"
+    },
+    "description": "ゆらゆら燃える炎が君の手中に現れる。この炎は持続時間じゅう燃え続け、君および君の装備品には決して害を与えない。この炎は半径10フィート（約3m）の範囲を“明るい”光で照らし、さらに10フィート（約3m）の範囲を“薄暗い”光で照らす。君がアクションを用いて解除するか、君がこの呪文を再び発動した時点で、この呪文は終了する。\n君はこの炎を用いて攻撃を行なえるが、そうするとこの呪文は終了する。この呪文を発動した時、または以降の君のターンに1回のアクションとして、君はこの炎を30フィート（約9m）以内のクリーチャー1体に投げつけることができる。1回の遠隔呪文攻撃を行なうこと。ヒットした場合、目標は1d8［火］ダメージを受ける。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d8ずつ増加する、すなわち5レベルで2d8、11レベルで3d8、17レベルで4d8である。"
+  },
+  {
+    "id": "poison-spray",
+    "name": {
+      "ja": "ポイズン・スプレー",
+      "en": "Poison Spray",
+      "altJa": "毒噴射"
+    },
+    "level": 0,
+    "school": "召喚術",
+    "classes": [
+      "ウィザード",
+      "ウォーロック",
+      "ソーサラー",
+      "ドルイド"
+    ],
+    "castingTime": "1アクション",
+    "range": "10フィート（約3m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "射程内にいる君から見えるクリーチャー1体に対して君は自分の手を伸ばし、手のひらからぷっと毒ガスを放つ。目標は【耐久力】セーヴィング・スローを行なわねばならず、失敗すると1d12の［毒］ダメージを受ける。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d12ずつ増加する、すなわち5レベルで2d12、11レベルで3d12、17レベルで4d12である。"
+  },
+  {
+    "id": "minor-illusion",
+    "name": {
+      "ja": "マイナー・イリュージョン",
+      "en": "Minor Illusion",
+      "altJa": "初級幻術"
+    },
+    "level": 0,
+    "school": "幻術",
+    "classes": [
+      "ウィザード",
+      "ウォーロック",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": false,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "羊毛ひとつまみ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "君は射程内に、持続時間の間持続する1種類の音、あるいは1種類の映像のうち、どちらか1つを作り出す。この幻は君が1回のアクションとして解除するか、この呪文をもう1度発動した時点で終了する。\n1種類の音を作り出した場合、その音量はささやき声から絶叫の間まで設定できる。その音は君の声や他の誰かの声、ライオンの咆哮や太鼓を叩く音、その他どんな音をも選ぶことができる。その音は持続時間の間中ずっと衰えずに続くが、君は呪文が終わる前なら、それぞれ別のタイミングで不連続に音を鳴らすこともできる。\n物体の映像、たとえば椅子や泥の足跡、小さな宝箱などを作り出す場合、その映像の大きさは一辺5フィート（約1.5m）の立方体以下でなければならない。この映像は音を立てることも、光や匂いを放つことも、その他いかなる感覚的な効果も作り出すこともない。映像と物理的なやり取りを行なえば、それが幻と言うことはただちに判明する。なぜなら、物がその映像を通り抜けてしまうからだ。\nクリーチャーがそのアクションを使ってこの呪文による音や映像を確かめようとするなら、そのクリーチャーは君の呪文セーヴィング・スロー難易度に対して、【知力】〈捜査〉の判定を行なう。成功したならば、それが幻と識別できる。クリーチャーがそれを幻だと識別したなら、そのクリーチャーにとってその幻はただのぼんやりとしたものとなる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "mage-hand",
+    "name": {
+      "ja": "メイジ・ハンド",
+      "en": "Mage Hand",
+      "altJa": "魔導士の手"
+    },
+    "level": 0,
+    "school": "召喚術",
+    "classes": [
+      "ウィザード",
+      "ウォーロック",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "射程内の君が選んだ地点に、幽霊のような空中に浮遊する手が1つ出現する。この手は持続時間の間じゅう、もしくは君がアクションとして消すまで、存在し続ける。この手は君から30フィート（約9m）より遠くに離れた場合、あるいは君がこの呪文をもう1度発動したなら消滅する。\n君はアクションを使うことで、この手を操ることができる。この手を使って1つの物体を操作したり、鍵のかかっていない扉や容器1つを開いたり、開いた容器にアイテム1つをしまったり、取り出したり、あるいは1本の瓶の中身を注いだりできる。君はこの手を操るたびに最大30フィート（約9m）までこの手を移動させることができる。\nこの手は攻撃を行なったり、魔法のアイテムを起動したり、あるいは10ポンド（約4.5㎏）を超える物を運搬することはできない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "message",
+    "name": {
+      "ja": "メッセージ",
+      "en": "Message",
+      "altJa": "伝言"
+    },
+    "level": 0,
+    "school": "変成術",
+    "classes": [
+      "ウィザード",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "短い銅の針金1本"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1ラウンド"
+    },
+    "description": "君は射程内のクリーチャー1体を指さし、小声でメッセージを話す。君の声は目標のみに聞こえ、目標もまた君だけに聞こえる声で返答できる。\n君が目標をよく知っており、かつ“この障害物の向こう側に目標がいる”と分かっているなら、君はその障害物ごしにこの呪文を発動できる。ただし魔法による沈黙、厚さ1フィート（約30cm）の石、厚さ1インチ（約2.5cm）の一般的な金属、鉛の薄板、あるいは厚さ3フィート（約90cm）の木材は、この呪文を遮断する。この呪文は目標までまっすぐな線が通っている必要がなく、曲がり角の向こう側や小さな開口部の奥にも届く。",
+    "higherLevels": ""
+  },
+  {
+    "id": "mending",
+    "name": {
+      "ja": "メンディング",
+      "en": "Mending",
+      "altJa": "修理"
+    },
+    "level": 0,
+    "school": "変成術",
+    "classes": [
+      "ウィザード",
+      "クレリック",
+      "ソーサラー",
+      "ドルイド",
+      "バード"
+    ],
+    "castingTime": "1分",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "磁石2つ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "この呪文は君が触れた物体1つの傷や裂け目1つ――たとえば千切れた鎖、2つに割れた鍵、破れた外套、水漏れするワイン袋など―を修理する。その傷や裂け目の大きさが縦・横・高さすべて1フィート（約30cm）以下ならば、君はその傷を跡形もなく修理する。\nこの呪文は物理的にダメージを受けた魔法のアイテムや人造クリーチャーを修理できるが、そういった物体から失われた魔力を回復させることはできない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "light",
+    "name": {
+      "ja": "ライト",
+      "en": "Light",
+      "altJa": "光"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "ウィザード",
+      "クレリック",
+      "ソーサラー",
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": true,
+      "materialDetail": "ホタル1匹あるいは燐光ゴケ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "1つの物体に接触する。その物体は差し渡し、奥行き、高さいずれも10フィート（約3m）以内でなければならない。呪文が終了するまで、その物体は半径20フィート（約6m）までを“明るい”明るさに、そこからさらに20フィート（約6m）を“薄暗い”明るさに照らす。この光には君が望む色を付けることができる。なにか不透明なものでこの物体を完全に覆ったなら、明かりは遮断されてしまう。君が再度この呪文を発動するか、1回のアクションとして消した時点で、この呪文は終了する。\n敵対するクリーチャーが手に持っている物体や、着用している物体を目標にする時には、そのクリーチャーはこの呪文を避けたければ【敏捷力】セーヴィング・スローを行なわなければならない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "ray-of-frost",
+    "name": {
+      "ja": "レイ・オヴ・フロスト",
+      "en": "Ray of Frost",
+      "altJa": "冷気光線"
+    },
+    "level": 0,
+    "school": "力術",
+    "classes": [
+      "ウィザード",
+      "ソーサラー"
+    ],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "青白い冷気エネルギーのビームを射程内のクリーチャーに放つ。1体の目標に対して遠隔呪文攻撃を行なうこと。ヒットすると目標は1d8の［冷気］ダメージを受け、君の次のターン開始時まで移動速度が10フィート（約3m）減少する。",
+    "higherLevels": "この呪文のダメージは君のレベルが特定の値に上昇するごとに1d8ずつ増加する、すなわち5レベルで2d8、11レベルで3d8、17レベルで4d8である。"
+  },
+  {
+    "id": "resistance",
+    "name": {
+      "ja": "レジスタンス",
+      "en": "Resistance",
+      "altJa": "抵抗力"
+    },
+    "level": 0,
+    "school": "防御術",
+    "classes": [
+      "クレリック",
+      "ドルイド"
+    ],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "外套のミニチュア"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "1体の同意するクリーチャーに接触する。呪文が終了する前に1回、目標は自身が選んだ1回のセーヴィング・スローに対し、1d4をロールして出た目を加算することができる。このダイスをロールするかどうかの選択は、セーヴィング・スローを行なう前でも後でも良い。1d4をロールした時点でこの呪文は終了する。",
+    "higherLevels": ""
+  },
+
+  
+{
+    "id": "armor-of-agathys",
+    "name": {
+      "ja": "アーマー・オヴ・アガテュス",
+      "en": "Armor of Agathys",
+      "altJa": "アガテュスの鎧"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": [
+      "ウォーロック"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "コップ1杯の水"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "防御的な魔法の力場が君を包み込み、君および君の装備品を覆うかすかな冷気として具現化する。持続時間中、君は一時的hp5を得る。この一時的hpが残っている間に、クリーチャーが君に近接攻撃を行なってヒットさせたなら、そのクリーチャーは5の [冷気] ダメージを受ける。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、一時的hp と[冷気] ダメージの双方が5ずつ増加する。"
+  },
+  {
+    "id": "arms-of-hadar",
+    "name": {
+      "ja": "アームズ・オヴ・ハダル",
+      "en": "Arms of Hadar",
+      "altJa": "ハダルの腕"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": [
+      "ウォーロック"
+    ],
+    "castingTime": "1アクション",
+    "range": "自身 (半径3m、半径10フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は“餓える闇”ハダルの力を呼び招く。触手状の闇のエネルギーが君から四方八方に伸び、君から3m (10フィート)以内のあらゆるクリーチャ一を打ちすえる。範囲内のクリーチャーは皆【筋力】セーヴを行なわねばならない。失敗した者は2d6 [死霊] ダメージを受け、その者の次のターンまでリアクションを行なえなくなる。セーヴに成功した者は半分のダメージを受け、他の効果は受けない。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルがレベルを1上回るごとに、ダメージが1d6増加する。"
+  },
+  {
+    "id": "identify",
+    "name": {
+      "ja": "アイデンティファイ",
+      "en": "Identify",
+      "altJa": "識別"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["ウィザード", "バード"],
+    "castingTime": "1分（儀式）",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "少なくとも100gpの価値のある真珠と、フクロウの羽根"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は1つの物体を選ぶ。この呪文を発動する間、君はその物体に触れ続けていなければならない。もしそれが魔法のアイテムであったり、その物体に何らかの魔法が込められていたなら、君はその特性とその使用方法とを識別する。そのアイテムを使用するのに同調が必要か否か、またそのアイテムにチャージ式の能力があるなら何チャージ残っているのかも知ることができる。また君はそのアイテムに何らかの呪文が作用を及ぼしているのか、そしてそれが何なのかを知ることができる。そのアイテムが呪文によって作られたものである場合、君はそのアイテムを作った呪文を知ることができる。\n君が呪文発動の間、物体ではなく1体のクリーチャーに触れ続けていたなら、そのクリーチャーに現在どのような呪文が作用を及ぼしているのか知ることができる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "animal-friendship",
+    "name": {
+      "ja": "アニマル・フレンドシップ",
+      "en": "Animal Friendship",
+      "altJa": "獣の友"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["ドルイド", "バード", "レンジャー"],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "食物少々"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "24時間"
+    },
+    "description": "君はこの呪文によって、1体の“野獣”クリーチャーに、君がその野獣を害するつもりはないと分からせることができる。射程内にいて、君から見える野獣を1体選ぶこと。その野獣は君を見ることができ、かつ君の声を聞くことができなければならない。その野獣の【知力】が4以上なら、この呪文は失敗する。そうでない場合、その野獣は【判断力】セーヴを行なわねばならず、失敗するとこの呪文の持続時間じゅう君によって魅了状態となる。君または君の仲間が目標に危害を加えた時点でこの呪文は終了する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、追加でもう1体野獣に作用を及ぼすことができる。"
+  },
+  {
+    "id": "alarm",
+    "name": {
+      "ja": "アラーム",
+      "en": "Alarm",
+      "altJa": "警報"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": ["ウィザード", "レンジャー"],
+    "castingTime": "1分（儀式）",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "小さな鐘1つと細い銀線少々"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "8時間"
+    },
+    "description": "君は望ましからざる侵入者に備えて警報を設置する。射程内にある、一辺20フィート（約6m）の立方体を越えない広さの範囲1つ、扉1つ、窓1つのいずれかを選ぶこと。この呪文が終了するまで、サイズ分類が超小型以上のクリーチャーが警報対象に触れるか侵入するたび、君に警報が届く。君はこの呪文を発動する際に、“これこれのクリーチャーはこの警報を鳴らさない”と指定することができる。また君は、“精神的な警報”と“音声による警報”のいずれかを選ぶ必要がある。\n精神的な警報は、君が警報対象から1マイル以内にいる時に限り、君の心の中に鋭い警報を発する。君が眠っていた場合、君はこの警報によって目を覚ます。\n音声による警報は、60フィート（約18m）の範囲に10秒間、ハンドベルの音を作り出す。",
+    "higherLevels": ""
+  },
+  {
+    "id": "unseen-servant",
+    "name": {
+      "ja": "アンシーン・サーヴァント",
+      "en": "Unseen Servant",
+      "altJa": "見えざる従者"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": ["ウィザード", "ウォーロック", "バード"],
+    "castingTime": "1アクション（儀式）",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "糸の切れ端と木片1つ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "この呪文は、不可視で精神を持たず不定形の中型サイズの力場を1つ作り、この呪文が終了するまで君が命じた単純作業に従事させるものだ。この従者は射程内の地面上の何ものにも占められていない場所に出現する。従者のACは10、hpは1、【筋力】は2で、攻撃は行なえない。従者のhpが0になるとこの呪文は終了する。\n君の各ターンにボーナス・アクションとして、君はこの従者に心で念じて命令を与え、“最大15フィート（約4.5m）までの移動を行ない、1つの物体を操作させる”ことができる。この従者はヒューマンの召使いが行なえるような単純作業――ものを取ってくる、掃除、修繕、服をたたむ、火おこし、配膳、お酌など――を行なうことができる。君からの指示を受けた従者は命じられた任務が終わるまで全力でその任務に取り組み、それが終わると君からの次の指示を待つ。\n君がこの従者に君から60フィート（約18m）より遠くに移動する必要のある任務を言いつけると、この呪文は終了する。",
+    "higherLevels": ""
+  },
+  
+  {
+    "id": "illusory-script",
+    "name": {
+      "ja": "イリューソリィ・スクリプト",
+      "en": "Illusory Script",
+      "altJa": "幻の文"
+    },
+    "level": 1,
+    "school": "幻術",
+    "classes": ["ウィザード", "ウォーロック", "バード"],
+    "castingTime": "1分（儀式）",
+    "range": "接触",
+    "components": {
+      "verbal": false,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "10gp以上の価値のある、鉛を含むインク；これは呪文により消費される"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "10日"
+    },
+    "description": "君は羊皮紙や紙などの筆記に適した材料に文字を書き、持続時間じゅう持続する効果的な幻術を吹きこむ。\n君および、君がこの呪文を発動する際に指定した任意の数のクリーチャーにとって、この文章は君の筆跡による普通のものに見え、君がその文章を書く際に意図していたとおりの意味を読み取ることができる。それ以外のすべての読者にとって、この文章は理解不能な未知の言語または魔法の文字で書かれたものに見える。あるいは、君はこの文章を（別人の筆跡で、別の言語で書かれた）まったく別物に見せかけることもできるが、君が知らない言語の文章に見せかけることはできない。\nこの呪文が解呪されると、本来の文章と幻の両方が消え失せる。\n超視覚を持つクリーチャーは隠された文章を読むことができる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "inflict-wounds",
+    "name": {
+      "ja": "インフリクト・ウーンズ",
+      "en": "Inflict Wounds",
+      "altJa": "傷付与"
+    },
+    "level": 1,
+    "school": "死霊術",
+    "classes": ["クレリック"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君の間合い内のクリーチャー1体に対して近接呪文攻撃を行なうこと。ヒットしたなら、目標は3d10の［死霊］ダメージを受ける。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとにダメージが1d10増加する。"
+  },
+  {
+    "id": "witch-bolt",
+    "name": {
+      "ja": "ウィッチ・ボルト",
+      "en": "Witch Bolt",
+      "altJa": "魔女の矢"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": [
+      "ソーサラー",
+      "ウォーロック",
+      "ウィザード"
+    ],
+    "castingTime": "1アクション",
+    "range": "9m (30フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "稲妻に打たれた木の小枝1本"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "射程内のクリーチャー1体にパチパチと鳴る青いエネルギー光線が突き刺さり、君と目標の間に電弧を形成する。目標に対して1回の遠隔呪文攻撃を行なうこと。ヒットすると以下の2つのことがおこる: (1) 目標は即座に1d12 [電撃] ダメージを受ける。(2) 持続時間中、君は自分のターンに1回のアクションとして目標に自動的に1d12 [電撃] ダメージを与えることができる。君がそれ以外のアクションを行なった時点でこの呪文は終了する。目標がこの呪文の射程の外に出るか、目標が君に対して完全遮蔽を得た場合も、この呪文は終了する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ヒット時のダメージが1d12増加する。"
+  },
+  {
+    "id": "expeditious-retreat",
+    "name": {
+      "ja": "エクスペディシャス・リトリート",
+      "en": "Expeditious Retreat",
+      "altJa": "迅速退却"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["ウィザード", "ウォーロック", "ソーサラー"],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "この呪文は君に途放にもない速さで動き回る能力を与える。この呪文を発動した時、君は“早足”アクションを行なう。また、この呪文が終了するまで、君は自分の各ターンにボーナス・アクションとして“早足”アクションを行なえる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "ensnaring-strike",
+    "name": {
+      "ja": "エンスネアリング・ストライク",
+      "en": "Ensnaring Strike",
+      "altJa": "絡みつく打撃"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": [
+      "レンジャー"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "この呪文が終了するまでの間に、君の武器攻撃が初めてクリーチャーにヒットした時、命中した箇所にトゲだらけの蔦の塊がもぞもぞと出現する。目標は【筋力】セーヴを行なわねばならず、失敗するとこの呪文が終了するまでこの魔法の蔦によって拘束状態になる。大型以上のサイズのクリーチャーはこのセーヴに有利を得る。目標がセーヴに成功した場合、 この蔦は萎れて消えてしまう。\nこの呪文によって拘束状態にされている間、目標は自分の各ターンの開始時に1d6 [刺突] ダメージを受ける。この蔦によって拘束状態にされているクリーチャー、もしくはそのクリーチャーに触れることのできる他のクリーチャーは、1回のアクションとして君の呪文セーヴ難易度に対する【筋力】判定を行なうことができ、これに成功すればこの拘束状態は終了する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ダメージが1d6増加する。"
+  },
+  {
+    "id": "entangle",
+    "name": {
+      "ja": "エンタングル",
+      "en": "Entangle",
+      "altJa": "からみつき"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": ["ドルイド"],
+    "castingTime": "1アクション",
+    "range": "90フィート（約27m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "射程内の一点を中心とした一辺20フィート（約6m）の正方形の範囲の地面に、からみつく雑草と蔦が生い茂る。持続時間中、この範囲はこれらの植物によって移動困難な地形と化す。\n君がこの呪文を発動した時点で範囲内にいたクリーチャーは【筋力】セーヴを行なわねばならず、失敗するとこの呪文が終了するまで植物にからみつかれて拘束状態になる。この植物によって拘束状態にされているクリーチャーは、自分のアクションを使い、君の呪文セーヴ難易度に対して【筋力】判定を1回行なうことができる。この判定に成功すれば、そのクリーチャーの拘束状態は終了する。\nこの呪文が終了すると、この呪文が作り出した植物は萎れて消え去る。",
+    "higherLevels": ""
+  },
+  {
+    "id": "guiding-bolt",
+    "name": {
+      "ja": "ガイディング・ボルト",
+      "en": "Guiding Bolt",
+      "altJa": "導きの矢"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["クレリック"],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1ラウンド"
+    },
+    "description": "射程内の君が選んだクリーチャーに向かって、閃光が伸びる。1体の目標に対して遠隔呪文攻撃を行なうこと。ヒットしたなら、目標は4d6の［光輝］ダメージを受け、さらに次の君のターン終了時までに行なわれる、この目標に対する次の1回の攻撃ロールは有利を得る。神秘的な薄暗い光が目標のまわりできらめき、導いてくれるからだ。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとにダメージが1d6増加する。"
+  },
+  {
+    "id": "color-spray",
+    "name": {
+      "ja": "カラー・スプレー",
+      "en": "Color Spray",
+      "altJa": "色しぶき"
+    },
+    "level": 1,
+    "school": "幻術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "castingTime": "1アクション",
+    "range": "自身（15フィート（約4.5m）の円錐形）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "赤と黄と青に染めた砂などの粉末1つまみ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1ラウンド"
+    },
+    "description": "君の片手から、目もくらむ極彩色の光の奔流が放たれる。6d10をロールすること。その合計値がこの呪文が作用するクリーチャーのヒット・ポイントの総計となる。君を起点とした15フィート（約4.5m）の円錐形の範囲内にいるクリーチャーは、現在ヒット・ポイントが低い順にこの呪文の作用を受ける（気絶状態のクリーチャーおよびものを見ることができないクリーチャーは無視すること）。\n現在ヒット・ポイントが最も低いクリーチャーから順に、“作用するクリーチャーのヒット・ポイントの総計”（＝6d10の合計値）から作用を受けたクリーチャーのヒット・ポイントを差し引いてゆき、現在ヒット・ポイントが次に低いクリーチャーに移っていく。あるクリーチャーに作用を及ぼすためには、残りの“合計値”がそのクリーチャーの現在ヒット・ポイント以上でなければならない。この呪文の作用を受けたクリーチャーはみな、次の君のターンの終了時まで盲目状態になる。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに2d10を追加でロールする。"
+  },
+  {
+    "id": "cure-wounds",
+    "name": {
+      "ja": "キュア・ウーンズ",
+      "en": "Cure Wounds",
+      "altJa": "傷治療"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["クレリック", "ドルイド", "バード", "パラディン", "レンジャー"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君が接触したクリーチャー1体は（1d8＋君の呪文発動能力修正値）に等しいヒット・ポイントを回復する。この呪文はアンデッドや人造クリーチャーにはなんの効果ももたらさない。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに回復量が1d8増加する。"
+  },
+  {
+    "id": "goodberry",
+    "name": {
+      "ja": "グッドベリー",
+      "en": "Goodberry",
+      "altJa": "良き漿果"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["ドルイド", "レンジャー"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "ヤドリギの小枝1本"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君の手の中に最大10粒までのベリーの実が現れる。これらの実には持続時間じゅう魔力が宿る。クリーチャーは1回のアクションとしてこのベリーを1粒食べることができ、食べた者は1hpを回復する。かつ、この実は1粒でそのクリーチャーが一日生きられるだけの栄養を含んでいる。\nこれらのベリーは、この呪文を発動してから24時間以内に食べないと力を失ってしまう。",
+    "higherLevels": ""
+  },
+  {
+    "id": "grease",
+    "name": {
+      "ja": "グリース",
+      "en": "Grease",
+      "altJa": "脂"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": ["ウィザード"],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "バターまたは豚の皮脂少々"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "射程内の一点を中心とした一辺10フィート（約3m）の正方形の範囲の地面は滑りやすい脂に覆われ、持続時間じゅう移動困難な地形となる。\nこの脂が出現した時、範囲内に立っていたクリーチャーは皆【敏捷力】セーヴを行なわねばならず、失敗すると伏せ状態になる。この範囲に入ったクリーチャーおよび範囲内でターンを終了したクリーチャーも【敏捷力】セーヴを行なわねばならず、失敗すると伏せ状態になる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "create-or-destroy-water",
+    "name": {
+      "ja": "クリエイト・オア・デストロイ・ウォーター",
+      "en": "Create or Destroy Water",
+      "altJa": "水の生成・破壊"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["クレリック", "ドルイド"],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "水の生成には水1滴、破壊には微量の砂粒"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は水を生成または破壊する。\n水の生成：射程内にある、ふたがされていない容器1つの中に、最大10ガロン（約38リットル）までの水を作り出す。あるいは、射程内の一辺30フィート（約9m）の立方体の範囲に雨として降らせ、その範囲内の覆いの無い炎を消すこともできる。\n水の破壊：射程内にある、ふたがされていない容器1つの中に入っている最大10ガロン（約38リットル）までの水を破壊する。あるいは、射程内の一辺30フィート（約9m）の立方体の範囲内の霧を破壊することもできる。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、生成または破壊する水の量を10ガロン増やすか、立方体の一辺の長さを5フィート（約1.5m）増やす。"
+  },
+  
+  {
+    "id": "chromatic-orb",
+    "name": {
+      "ja": "クロマティック・オーブ",
+      "en": "Chromatic Orb",
+      "altJa": "万色弾"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": [
+      "ソーサラー",
+      "ウィザード"
+    ],
+    "castingTime": "1アクション",
+    "range": "27m(90フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "50gp以上の価値のあるダイアモンド1つ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は射程内にいて君から見えているクリーチャー1体に直径10cm (4インチ)のエネルギー弾を放つ。[酸]、[電撃]、[毒]、[火]、[雷鳴]、[冷気]のいずれか1種類を選び、1回の遠隔呪文攻撃を行なうこと。この攻撃のヒットを受けたクリーチャーは君が選んだ種別の3d8ダメージを受ける。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ダメージが1d8増加する。"
+  },
+  {
+    "id": "command",
+    "name": {
+      "ja": "コマンド",
+      "en": "Command",
+      "altJa": "命令"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["クレリック", "パラディン"],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1ラウンド"
+    },
+    "description": "射程内にいて、君が見ることのできるクリーチャー1体に対して一言の命令を発する。目標は【判断力】セーヴィング・スローを行なわねばならず、失敗したなら目標の次のターンにおいてその命令に従う。この呪文は、目標がアンデッドである場合、目標が君の言語を理解できない場合、もしくはその命令が直接的に目標を傷つけるものである場合には、効果を発揮しない。\nいくつかの典型的な命令とその効果を下記に示す。君はここに説明してあるもの以外の命令を発することもできる。もしそうするなら、目標がどのように振る舞うかはGMが決定する。もし目標が発せられた命令に従うことができないなら、呪文は終了する。\n落とせ：目標は手に持っているあらゆるものを落とし、そしてそのターンを終了する。\n来い：目標は最短かつ最も直線的なルートをたどって君の方へ移動し、君の5フィート（約1.5m）以内にまで移動したところでそのターンを終了する。\n止まれ：目標は移動もアクションも行なわない。飛行中のクリーチャーは、可能ならば空中に留まる。空中に留まるために移動しなければならないのなら、そのクリーチャーは空中にいるために必要な最低限の移動を行なう。\n逃げろ：目標は自分のターンを君から遠く離れるために移動することに費やす。その際には可能な限り最も早い手段を使う。\nひれ伏せ：目標は倒れて伏せ状態になり、そのターンを終了する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに追加で1体のクリーチャーに効果を及ぼすことができる。それらのクリーチャーは、君が目標に取る時にはみな互いに30フィート（約9m）以内にいなければならない。"
+  },
+  {
+    "id": "comprehend-languages",
+    "name": {
+      "ja": "コンプリヘンド・ランゲージズ",
+      "en": "Comprehend Languages",
+      "altJa": "言語理解"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["ウィザード", "ウォーロック", "ソーサラー", "バード"],
+    "castingTime": "1アクション（儀式）",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "ひとつまみの煤と塩"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "持続時間の間、君は自分が聞いているあらゆる話し言葉について、逐語的にその意味を理解する。また、君が目にしている書き言葉も理解できるが、その言葉が書かれている表面に触れていなければならない。文章1ページを読むには約1分を要する。\nこの呪文は、文章中に隠された秘密のメッセージを明らかにしたりはしない。また、（秘術の印形などのように）書き言葉の内容とは見なされないような秘文を解読することもできない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "compelled-duel",
+    "name": {
+      "ja": "コンペルド・デュエル",
+      "en": "Compelled Duel",
+      "altJa": "強制決闘"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": [
+      "パラディン"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "9m (30フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "君は1体のクリーチャーに自分との決闘を強制しようとする。射程内にいて君から見えるクリーチャー1体は、【判断力】 セーヴを行なわねばならない。このセーヴに失敗した目標は、君の神々しい要求によって君に近寄ることを強いられる。この呪文の持続時間中、目標は次の2つの制約を受ける: (1) 目標は君以外のクリーチャーに対する攻撃ロールに不利を被る。(2) 目標は、君から9m (30フィート) より遠くの場所に移動しようとするたびに 【判断力】セーヴに成功しなければならない(このセーヴに成功したなら、目標はそのターン、この呪文による制限を受けずに移動できる)。\nこの呪文は以下のいずれかの条件が満たされた時点で終了する: (1) 君が目標以外のクリーチャーを攻撃した。(2)君が目標以外の敵対的なクリーチャーを目標にして呪文を発動した。(3)君に友好的なクリーチャ一が目標にダメージを与えるか目標に有害な呪文を発動した。(4)君が目標から9m (30フィート)より遠い場所でターンを終了した。",
+    "higherLevels": ""
+  },
+  {
+    "id": "silent-image",
+    "name": {
+      "ja": "サイレント・イメージ",
+      "en": "Silent Image",
+      "altJa": "音なき幻像"
+    },
+    "level": 1,
+    "school": "幻術",
+    "classes": ["ウィザード", "ソーサラー", "バード"],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "羊毛ひとつまみ"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "君は、1辺15フィート（約4.5m）の立方体におさまる大きさの、物体1つかクリーチャー1つか視覚的現象の幻像を作り出す。この幻像は射程内の1箇所に出現し、持続時間じゅう存在し続ける。この幻像は純粋に視覚的なもので、音や匂い、その他の感覚は伴わない。\n君はアクションを使うことで、この幻像を射程内の任意の場所へと動かすことができる。幻像が場所を移す際、君はその幻像の外見を変化させることで、その移動が幻像にとってふさわしいもののように見せることができる。たとえば、クリーチャーの幻像を作り、それを移動させる際にその外見を変化させ、幻像が歩いて移動したように見せかけることができるのだ。\nこの映像と物理的なやり取りを行なえば、それが幻ということはただちに判明する。なぜなら、その映像を通り抜けてしまうからだ。クリーチャーがアクションを使ってその映像を確かめようとするなら、そのクリーチャーは君の呪文セーヴィング・スロー難易度に対して、【知力】〈捜査〉の判定を行なう。成功したならば、それが幻と識別できる。クリーチャーがそれを幻だと識別したなら、そのクリーチャーは幻に隠されたものを見ることができる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "sanctuary",
+    "name": {
+      "ja": "サンクチュアリ",
+      "en": "Sanctuary",
+      "altJa": "聖域"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": ["クレリック"],
+    "castingTime": "1ボーナス・アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "小さな銀の鏡"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "君は射程内のクリーチャー1体を攻撃から守る。この呪文が終了するまで、この守られたクリーチャーを攻撃や有害な呪文の目標とする者は誰でも、まず【判断力】セーヴィング・スローを行なわなければならない。セーヴに失敗すると、そのクリーチャーは新しい目標を選び直さなければならず、それができないならばその攻撃や呪文はむだになる。この呪文は対象クリーチャーを、ファイアーボールの爆発などの範囲に及ぶ効果から守る事はできない。\nこの呪文で守られているクリーチャーが攻撃を行なったり、敵のクリーチャーに作用する呪文を発動したり、他のクリーチャーにダメージを与えたりすると、この呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "thunderwave",
+    "name": {
+      "ja": "サンダーウェイヴ",
+      "en": "Thunderwave",
+      "altJa": "雷鳴波"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["ウィザード", "ソーサラー", "ドルイド", "バード"],
+    "castingTime": "1アクション",
+    "range": "自身（1辺15フィート（約4.5m）の立方体）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "雷鳴の如き力の波が君から放たれてあたりをなぎ払う。君を起点とする1辺15フィート（約4.5m）の立方体の中にいる各クリーチャーは【耐久力】セーヴィング・スローを行なわなければならない。セーヴに失敗すると、クリーチャーは2d8の［雷鳴］ダメージを受け、君から遠ざかる方向に10フィート（約3m）押しやられる。成功すればその半分のダメージで済み、押しやられない。\n加えて、完全にこの効果範囲内に入っている固定されていない物体は、この呪文の効果によって自動的に、君から遠ざかる方向に10フィート（約3m）押しやられる。さらに、この呪文は雷鳴のような轟音を発し、それは300フィート（約90m）以内に聞こえてしまう。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとにダメージが1d8増加する。"
+  },
+  {
+    "id": "thunderous-smite",
+    "name": {
+      "ja": "サンダラス・スマイト",
+      "en": "Thunderous Smite",
+      "altJa": "雷鳴の一撃"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": [
+      "パラディン"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "この呪文が終了するまでの間に、君の近接武器攻撃が初めてヒットした時、君の武器は君から90m (300フィート)まで離れても聞こえる雷鳴を轟かせ、その攻撃は目標に2d6の追加 [雷鳴] ダメージを与える。さらに、 その攻撃の目標がクリーチャーであるなら、目標は【筋力】セーヴを行なわねばならず、失敗すると君から離れる方向へ3m (10フィート) 押しやられた上に伏せ状態になる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "searing-smite",
+    "name": {
+      "ja": "シアリング・スマイト",
+      "en": "Searing Smite",
+      "altJa": "灼熱の一撃"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": [
+      "パラディン"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "この呪文が終了するまでの間に、君の近接武器攻撃が初めてクリーチャーにヒットした時、君の武器は白熱して閃光を放ち、その攻撃はそのクリーチャーに1d6の追加 [火] ダメージを与えた上に目標を発火させる。 以後この呪文が終了するまで、目標は自身のターン開始時に【耐久力】セーヴを行なわねばならない。これに失敗すると、目標は1d6 [火] ダメージを受ける。このセーヴに成功すると、この呪文は終了する。目標または目標から1.5m (5フィート)以内にいる他のクリーチャーは1回のアクションを用いてこの火を消すことができ、そうすればこの呪文は終了する。目標が水中に飛び込むなど、他の理由によって火が消えた場合も、 この呪文は終了する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、最初のヒット時の追加ダメージが1d6増加する。"
+  },
+  {
+    "id": "shield",
+    "name": {
+      "ja": "シールド",
+      "en": "Shield",
+      "altJa": "盾"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "castingTime": "1リアクション。攻撃が君にヒットしたときや、君がマジック・ミサイル呪文の目標となったときにこのリアクションを取れる",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1ラウンド"
+    },
+    "description": "不可視の魔法の力場が出現し攻撃を防ぐ。君の次のターンの開始時まで、君はACに＋5のボーナスを得ると共に（このボーナスはトリガーとなった攻撃に対しても適用される）、マジック・ミサイルから一切のダメージを受けなくなる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "shield-of-faith",
+    "name": {
+      "ja": "シールド・オヴ・フェイス",
+      "en": "Shield of Faith",
+      "altJa": "信仰の盾"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": ["クレリック", "パラディン"],
+    "castingTime": "1ボーナス・アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "聖句の一片が書かれた小さな羊皮紙"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "光り輝く盾が出現して、射程内にいる君の選んだクリーチャー1体を取り囲んで守り、持続時間のあいだACに＋2のボーナスを与える。",
+    "higherLevels": ""
+  },
+  
+  {
+    "id": "jump",
+    "name": {
+      "ja": "ジャンプ",
+      "en": "Jump",
+      "altJa": "跳躍"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["ウィザード", "ソーサラー", "ドルイド", "レンジャー"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "バッタの後ろ足1本"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "君は1体のクリーチャーに触れる。この呪文が終了するまで、そのクリーチャーの跳躍距離は3倍になる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "speak-with-animals",
+    "name": {
+      "ja": "スピーク・ウィズ・アニマルズ",
+      "en": "Speak with Animals",
+      "altJa": "動物との会話"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["ドルイド", "バード", "レンジャー"],
+    "castingTime": "1アクション（儀式）",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "10分"
+    },
+    "description": "持続時間中、君は野獣の“ことば”を理解して音声で意志疎通する能力を得る。野獣の多くはその知力によって制限される範囲の知識や認識しか持たないが、最低でも近くの場所やモンスターに関する情報（昨日その野獣が見聞きしたあらゆる物事を含む）を君に教えることはできる。GMの判断しだいだが、君は野獣を説得してささやかな仕事を頼めるかもしれない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "sleep",
+    "name": {
+      "ja": "スリープ",
+      "en": "Sleep",
+      "altJa": "睡眠"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["ウィザード", "ソーサラー", "バード"],
+    "castingTime": "1アクション",
+    "range": "90フィート（約27m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "少量の細かい砂、バラの花びら、あるいはコオロギ1匹"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "この呪文はクリーチャーを魔法の眠りへといざなう。5d8をロールすること。その合計値がこの呪文が作用するクリーチャーのヒット・ポイントの総計となる。射程内の君が選択した1点から20フィート（約6m）以内にいるクリーチャーは、その現在ヒット・ポイントの低い順からこの呪文の作用を受ける（気絶状態のクリーチャーは無視すること）。\n現在ヒット・ポイントが最も低いクリーチャーから順に、“作用するクリーチャーのヒット・ポイントの合計値”（＝5d8の合計値）から作用を受けたクリーチャーのヒット・ポイントを差し引いてゆき、現在ヒット・ポイントが次に低いクリーチャーに移っていく。あるクリーチャーに作用を及ぼすためには、残りの“合計値”がそのクリーチャーの現在ヒット・ポイント以上でなければならない。この呪文の作用を受けたクリーチャーはみな眠ってしまい、この呪文が終了するか、寝ている者がダメージを受けるか、あるいは誰かがアクションを使って寝ている者を起こすために揺り動かしたり引っ叩いたりするまで、気絶状態に陥る。\nアンデッド、および魅了状態に完全耐性を持つクリーチャーはこの呪文の作用を受けない。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに2d8を追加でロールする。"
+  },
+
+   {
+    "id": "hideous-laughter",
+    "name": {
+      "ja": "ターシャズ・ヒディアス・ラフター",
+      "en": "Hideous Laughter",
+      "altJa": "ターシャの抱腹絶倒"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["ウィザード", "バード"],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "小さなタルト数個と、空中で揺らす1本の羽"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "射程内にいて君から見えるクリーチャー1体を選ぶこと。そのクリーチャーはあらゆる物事を面白おかしく感じるようになり、この呪文の作用を受けているあいだ笑いの発作が続く。目標は【判断力】セーヴを行なわねばならない。これに失敗した目標は伏せ状態になり、持続時間中は立ち上がることができずかつ無力状態になる。【知力】が4以下のクリーチャーはこの作用を受けない。\n目標の各ターンの終了時および目標がダメージを受けるたび、目標は【判断力】セーヴを行なう。ダメージが原因でこのセーヴを行なう場合は有利がつく。このセーヴに成功すればこの呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "charm-person",
+    "name": {
+      "ja": "チャーム・パースン",
+      "en": "Charm Person",
+      "altJa": "人物魅了"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["ウィザード", "ウォーロック", "ソーサラー", "ドルイド", "バード"],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "君は射程内にいて君が見ることのできる人型生物1体を魅了しようとする。目標は【判断力】セーヴィング・スローを行なわねばならない。君もしくは君の仲間がその目標と戦闘中なら、目標はセーヴィング・スローに有利を得る。セーヴィング・スローに失敗したなら、目標は君によって魅了状態になる。この状態は、呪文が終了するか、君または君の仲間が目標に何であれ危害を与えるまで持続する。魅了されたクリーチャーは君を親しい知人と見なすようになる。呪文が終了した時、そのクリーチャーは自分が君に魅了されていたことに気づく。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに追加で1体のクリーチャーを目標とすることができる。それらのクリーチャーは、君が目標に取る時にはみな互いに30フィート（約9m）以内にいなければならない。"
+  },
+  {
+    "id": "divine-favor",
+    "name": {
+      "ja": "ディヴァイン・フェイヴァー",
+      "en": "Divine Favor",
+      "altJa": "神寵"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["パラディン"],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "君が祈ると、信仰の輝きが君を強化する。この呪文が終了するまで、君の武器攻撃はヒットするたびに1d4の追加［光輝］ダメージを与える。",
+    "higherLevels": ""
+  },
+  {
+    "id": "disguise-self",
+    "name": {
+      "ja": "ディスガイズ・セルフ",
+      "en": "Disguise Self",
+      "altJa": "変装"
+    },
+    "level": 1,
+    "school": "幻術",
+    "classes": ["ウィザード", "ソーサラー", "バード"],
+    "castingTime": "1アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "君は自分自身――これには君の衣類、鎧、武器、そしてその他の君が身につけているものを含む――が別の外見に見えるようにする。これはこの呪文が終了するか、君がアクションを使用して解除するまで持続する。君は自分の身長を1フィート（約30cm）まで高く、あるいは低く見せることができる。また、痩せているか、太っているか、その中間に見えるようにすることもできる。しかし、肉体の基本的な構成を変えることはできないので、基本的な四肢の付き方は同じものとなるようにしなければならない。このことをのぞけば、この幻術の限界は君次第となる。\nこの呪文によってもたらされる変化は物理的な検査を欺くことはできない。たとえば、君がこの呪文を使って衣服につば付きの帽子を加えたとしても、物体はその帽子をすり抜けるし、それに触れた者は誰でもそこに何もないことに気付き、君の頭や頭髪の感触を感じるだろう。もしこの呪文を使って君が本来よりも痩せているように見せたなら、誰かが君へと手を伸ばしたとき、その手はまだ空中にあるように見えるのに君にぶつかることになるだろう。\nクリーチャーは君の変装を見破るため、自身のアクションを使って君の外見を調べることができる。それには君の呪文セーヴ難易度に対して、【知力】〈捜査〉判定を成功させなければならない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "dissonant-whispers",
+    "name": {
+      "ja": "ディソナント・ウィスパーズ",
+      "en": "Dissonant Whispers",
+      "altJa": "耳障りな囁き"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": [
+      "バード"
+    ],
+    "castingTime": "1アクション",
+    "range": "18m (60フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "射程内のクリーチャーを1体選ぶこと。君は目標のみに聞こえる耳障りなメロディを口ずさみ、恐るべき痛みで目標を苦しめる。目標は【判断力】セーヴを行なわねばならない。これに失敗した場合、目標は3d6 [精神] ダメージを受け、即座に(リアクションを行なえるなら) リアクションとして、目標の移動速度で可能な限り君から遠ざかるように移動しなければならない。ただし、この移動によって火や穴のように明確に危険な場所には入らない。このセーヴに成功した場合、目標は半分のダメージを受け、移動は行なわない。聴覚喪失状態のクリーチャーはこのセーヴに自動的に成功する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ダメージが1d6増加する。"
+  },
+  {
+    "id": "detect-evil-and-good",
+    "name": {
+      "ja": "ディテクト・イーヴル・アンド・グッド",
+      "en": "Detect Evil and Good",
+      "altJa": "善悪感知"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["クレリック", "パラディン"],
+    "castingTime": "1アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "持続時間中、君は自分から30フィート（約9m）以内のアンデッド、異形、エレメンタル、セレスチャル、フィーンド、およびフェイの有無とその居場所を感知できる。同様に、君は自分から30フィート（約9m）以内に魔法的に聖別または冒涜された場所や物体があるか否かも知ることができる。\nこの呪文はほとんどの障壁を貫通するが、厚さ1フィート（約30cm）の石、厚さ1インチ（約2.5cm）の一般的な金属、鉛の薄板、あるいは厚さ3フィート（約90cm）の木材や土壁によって妨害される。",
+    "higherLevels": ""
+  },
+  {
+    "id": "detect-poison-and-disease",
+    "name": {
+      "ja": "ディテクト・ポイズン・アンド・ディジーズ",
+      "en": "Detect Poison and Disease",
+      "altJa": "毒と病気の感知"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["クレリック", "ドルイド", "パラディン", "レンジャー"],
+    "castingTime": "1アクション（儀式）",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "イチイの葉1枚"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "持続時間中、君は自分から30フィート（約9m）以内の毒物、毒を持つクリーチャー、および病気の有無とその場所を感知できる。さらに、君は感知した毒物、毒を持つクリーチャー、および病気をすべて識別する。\nこの呪文はほとんどの障壁を貫通するが、厚さ1フィート（約30cm）の石、厚さ1インチ（約2.5cm）の一般的な金属、鉛の薄板、あるいは厚さ3フィート（約30cm）の木材や土壁によって妨害される。",
+    "higherLevels": ""
+  },
+  {
+    "id": "detect-magic",
+    "name": {
+      "ja": "ディテクト・マジック",
+      "en": "Detect Magic",
+      "altJa": "魔法の感知"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["ウィザード", "クレリック", "ソーサラー", "ドルイド", "バード", "パラディン", "レンジャー"],
+    "castingTime": "1アクション（儀式）",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "持続時間の間、君は自分から30フィート（約9m）以内にある魔法の存在を感知する。これにより魔法を感知したなら、1回のアクションを使うことで、効果範囲の中にあって魔法を帯びていて視覚により知覚可能なクリーチャーや物体の周囲にあるかすかなオーラを見ることができ、その魔法に系統があるなら、それを知ることができる。\nこの呪文はほとんどの障壁を貫通するが、厚さ1フィート（約30cm）の石、厚さ1インチ（約2.5cm）の一般的な金属、鉛の薄板、あるいは厚さ3フィート（約90cm）の木材や土壁によって妨害される。",
+    "higherLevels": ""
+  },
+  {
+    "id": "floating-disk",
+    "name": {
+      "ja": "テンサーズ・フローティング・ディスク",
+      "en": "Floating Disk",
+      "altJa": "テンサーの浮遊盤"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": ["ウィザード"],
+    "castingTime": "1アクション（儀式）",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "水銀1滴"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "この呪文は直径3フィート（約90cm）厚さ1インチ（約2.5cm）の水平な力場製の円盤を1枚作る。射程内の、君から見える、何ものにも占められていない場所を1つ選ぶこと。この円盤はその場所の地面から3フィートの高さに浮かび続ける。この円盤は持続時間じゅう持続し、最大で500ポンド（約230kg）までの重量を支えることができる。これを越える重量を載せるとこの呪文は終了し、円盤に載っていたものはすべて地面に落ちる。\n君から20フィート（約6m）以内にある限り、この円盤は動かない。君が円盤から20フィート（約6m）より遠い位置に移動すると、この円盤は君を追いかけて移動し、君から20フィート（約6m）以内に留まり続ける。この円盤は傾いた地面を進んだり、階段や斜面を上り下りすることはできるが、10フィート（約3m）以上の段差を越えることはできない。たとえば、この円盤は深さ10フィート（約3m）の穴を飛び越えることはできないし、その穴の底に出現した円盤は穴の上に上がるのことができない。\n君がこの円盤から100フィート（約30m）より遠く離れた場合（たとえば円盤が障害物を迂回して君を追いかけることができなかった場合）、この呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "burning-hands",
+    "name": {
+      "ja": "バーニング・ハンズ",
+      "en": "Burning Hands",
+      "altJa": "火炎双手"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "castingTime": "1アクション",
+    "range": "自身（15フィート（約4.5m）の円錐形）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "両手の親指をつけて他の指を開くと、君の指先から灼熱の炎が円錐の形に放たれる。15フィート（約4.5m）の円錐形の中にいるすべてのクリーチャーは【敏捷力】セーヴィング・スローを行なわねばならない。セーヴィング・スローを失敗したクリーチャーは3d6の［火］ダメージを受ける。成功した者はその半分のダメージを受ける。\nこの炎の範囲内にあって、何者にも着用されたり、運搬されていない可燃物は発火する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとにダメージが1d6増加する。"
+  },
+  {
+    "id": "hunters-mark",
+    "name": {
+      "ja": "ハンターズ・マーク",
+      "en": "Hunter's Mark",
+      "altJa": "狩人の印"
+    },
+    "level": 1,
+    "school": "占術",
+    "classes": ["レンジャー"],
+    "castingTime": "1ボーナス・アクション",
+    "range": "90フィート（約27m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1時間まで"
+    },
+    "description": "君は射程内にいて君から見えているクリーチャー1体を選び、君の獲物として神秘的な印をつける。この呪文が終了するまで、君の武器攻撃が目標にヒットするたび、君は目標に1d6の追加ダメージを与える。また、君は目標を探すための【判断力】〈知覚〉判定および【判断力】〈生存〉判定に有利を得る。\nこの呪文が終了する前に目標のhpが0になったなら、君は次以降の君のターンにボーナス・アクションとして新たなクリーチャー1体に印をつけることができる。",
+    "higherLevels": "君がこの呪文を3レベルまたは4レベルの呪文スロットを用いて発動する場合、君はこの呪文への精神集中を最大8時間まで維持できる。5レベル以上の呪文スロットを用いて発動する場合は最大24時間まで維持できる。"
+  },
+  {
+    "id": "healing-word",
+    "name": {
+      "ja": "ヒーリング・ワード",
+      "en": "Healing Word",
+      "altJa": "癒しの言葉"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["クレリック", "ドルイド", "バード"],
+    "castingTime": "1ボーナス・アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "射程内にいて、君が見ることのできるクリーチャー1体を選ぶ。そのクリーチャーは（1d4＋君の呪文発動能力修正値）に等しいヒット・ポイントを回復する。この呪文はアンデッドや人造クリーチャーにはなんの効果ももたらさない。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに回復量が1d4増加する。"
+  },
+ 
+  {
+    "id": "purify-food-and-drink",
+    "name": {
+      "ja": "ピュアリファイ・フード・アンド・ドリンク",
+      "en": "Purify Food and Drink",
+      "altJa": "食糧および水浄化"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["クレリック", "ドルイド", "パラディン"],
+    "castingTime": "1アクション（儀式）",
+    "range": "10フィート（約3m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "射程内の君が選んだ一点を中心とした半径5フィート（約1.5m）以内にある、魔法でないすべての食物と飲料は浄化され、毒と病気が取り除かれる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "heroism",
+    "name": {
+      "ja": "ヒロイズム",
+      "en": "Heroism",
+      "altJa": "勇壮"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["バード", "パラディン"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "君は同意するクリーチャー1体に触れて勇気を授ける。この呪文が終了するまで、目標は恐怖状態に対する完全耐性を有し、目標は目標の各ターンの開始時に君の呪文発動能力修正値に等しい値の一時的hpを得る。この呪文が終了した時点で、目標がこの呪文によって得ていた一時的hpはすべて失われる。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、追加でもう1体のクリーチャーを目標に選べる。"
+  },
+  {
+    "id": "find-familiar",
+    "name": {
+      "ja": "ファインド・ファミリアー",
+      "en": "Find Familiar",
+      "altJa": "使い魔獲得"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": ["ウィザード"],
+    "castingTime": "1時間（儀式）",
+    "range": "10フィート（約3m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "合計10gpの価値のある炭と香とハーブを真鍮の火鉢で燃やす"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君は1体の使い魔すなわち動物の姿をした霊を従者にする。以下の動物から1種類を選ぶこと；アウル（フクロウ）、ウィーゼル（イタチ）、オクトパス（タコ）、キャット（ネコ）、クラブ（カニ）、シー・ホース（タツノオトシゴ）、スパイダー（クモ）、バット（コウモリ）、フィッシュ／クィッパー（魚）、フロッグ／トード（カエル）、ポイズナス・スネーク（毒蛇）、ホーク（タカ）、ラット（ネズミ）、リザード（トカゲ）、レイヴン（ワタリガラス）。君の使い魔は射程内の何ものにも占められていない場所に出現する。使い魔のデータは選んだ動物のデータに等しいが、クリーチャー種別は野獣ではなくセレスチャル、フェイ、フィーンドのいずれかである（君が選ぶ）。\n君の使い魔は君から独立して行動するが、常に君の命令に従う。戦闘においては使い魔自身のイニシアチブをロールし、使い魔自身のターンに行動を行なう。使い魔は攻撃を行なえないが、他のアクションは通常通り行なえる。\n使い魔のhpが0になった時点で、使い魔は跡形もなく消えうせる。この呪文を再び発動すれば使い魔は再出現する。君は1回のアクションとして使い魔を一時的にポケット次元界へ退去させることができる。あるいは、君は自分の使い魔を永遠に退去させることもできる。一時的に使い魔を退去させている間、君は1回のアクションとして、君から30フィート（約9m）以内の何ものにも占められていない場所に使い魔を再出現させることができる。使い魔のhpが0になるかポケット次元界へ退去する時には、使い魔が着用または運搬していた物はすべて使い魔のいた場所に残る。\n君の使い魔が君から100フィート（約30m）以内にいる限り、君は使い魔とテレパシーで意思疎通できる。さらに、君は1回のアクションとして、君の次のターンの開始時まで使い魔の目を通してものを見、使い魔が聞いた音を聞くことができる。この間、君は使い魔が持つ特殊な感覚の利益をすべて得られるが、自分自身の周囲に関しては盲目状態かつ聴覚喪失状態である。\n1人の術者が2体以上の使い魔を持つことはできない。すでに使い魔を持っている者が再度この呪文を発動すると、新たな使い魔が現れるのではなく、既存の使い魔の姿が変わる。前述の動物のリストから1種類を選ぶこと。君の使い魔は選んだ動物に変身する。\n最後に、君が“射程：接触”の呪文を発動する際、君の使い魔がその呪文を発動したかのように、使い魔経由でその呪文を伝達することができる。これを行なうためには、君の使い魔は君から100フィート以内にいなければならず、君が接触呪文を発動した際に使い魔がリアクションを消費する必要がある。その呪文が攻撃ロールを要する場合、使い魔のものではなく君の攻撃ボーナスを用いてロールを行なう。",
+    "higherLevels": ""
+  },
+  {
+    "id": "faerie-fire",
+    "name": {
+      "ja": "フェアリー・ファイアー",
+      "en": "Faerie Fire",
+      "altJa": "妖精の火"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["ドルイド", "バード"],
+    "castingTime": "1アクション",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "射程内の1辺が20フィート（約6m）の立方体の中にある物体はみな、青、緑または紫色の光で縁取られる（色は君が選択する）。呪文の効果範囲の中にいるすべてのクリーチャーもまた、【敏捷力】セーヴィング・スローに失敗したなら、この光で縁取られる。持続時間の間、物体及びこの呪文の作用を受けたクリーチャーは半径10フィート（約3m）に“薄暗い”明かりを放つ。\n作用を受けたクリーチャーあるいは物体に対する攻撃ロールは、攻撃を行なう者がその光を見ることができるなら、有利を得る。また、作用を受けたクリーチャーと物体は不可視状態であることによる利益を得られない。",
+    "higherLevels": ""
+  },
+  {
+    "id": "feather-fall",
+    "name": {
+      "ja": "フェザー・フォール",
+      "en": "Feather Fall",
+      "altJa": "軟着陸"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["ウィザード", "ソーサラー", "バード"],
+    "castingTime": "1リアクション；このリアクションは君または君から60フィート（約18m）以内のクリーチャー1体が落下した時に行なえる",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": true,
+      "materialDetail": "小さな羽1枚または綿毛1つまみ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1分"
+    },
+    "description": "射程内にいる落下中のクリーチャーを最大5体まで選ぶ。この呪文が終了するまで、それらのクリーチャーの落下速度は毎ラウンド60フィート（約18m）に低下する。この呪文が終了するまでにそのクリーチャーが着地した場合、そのクリーチャーは落下ダメージを受けずに足から着地し、そのクリーチャーに関してこの呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "false-life",
+    "name": {
+      "ja": "フォールス・ライフ",
+      "en": "False Life",
+      "altJa": "偽りの生命"
+    },
+    "level": 1,
+    "school": "死霊術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "castingTime": "1アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "少量の酒"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "君は死霊術によるまがいものの生命力によって己を強化することで、持続時間中1d4＋4の一時的hpを得る。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、追加で5の一時的hpを得る。"
+  },
+  {
+    "id": "fog-cloud",
+    "name": {
+      "ja": "フォッグ・クラウド",
+      "en": "Fog Cloud",
+      "altJa": "濃霧"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": ["ウィザード", "ソーサラー", "ドルイド", "レンジャー"],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1時間まで"
+    },
+    "description": "君は射程内の一点を中心とした半径20フィート（約6m）の球形の霧を発生させる。この球形は角を回り込んで広がり、球形の範囲内は“重度の隠蔽”である。この霧は持続時間が終了するか“軟風”（風速10マイル／時）以上の風によって吹き散らされるまで持続する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、霧の半径が20フィート（約6m）ずつ増加する。"
+  },
+  {
+    "id": "bless",
+    "name": {
+      "ja": "ブレス",
+      "en": "Bless",
+      "altJa": "祝福"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["クレリック", "パラディン"],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "少量の聖水。これを散布する"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "射程内にいる3体までのクリーチャーを選択し、祝福を与える。呪文が終了するまで、目標は攻撃ロールまたはセーヴィング・スローを行なう時には常に、1d4をロールして、その結果を攻撃ロールまたはセーヴィング・スローの結果に加算できる。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに追加で1体のクリーチャーを目標とすることができる。"
+  },
+  
+  {
+    "id": "protection-from-evil-and-good",
+    "name": {
+      "ja": "プロテクション・フロム・イーヴル・アンド・グッド",
+      "en": "Protection from Evil and Good",
+      "altJa": "善悪からの保護"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": ["ウィザード", "ウォーロック", "クレリック", "パラディン"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "聖水または銀と鉄の粉；これは呪文により消費される"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大10分まで"
+    },
+    "description": "この呪文が終了するまで、君が触れた同意するクリーチャー1体は特定の種別（アンデッド、異形、エレメンタル、セレスチャル、フィーンド、およびフェイ）のクリーチャーから護られる。\nこの護りは以下のような複数の利益を与える。（1）それらの種別のクリーチャーは目標に対する攻撃ロールに不利を受ける。（2）目標はそれらのクリーチャーによって魅了状態や恐怖状態にされることがなく、憑依もされない。目標がすでにそれらのクリーチャーによって魅了状態や恐怖状態にされているか、憑依されているなら、目標はその効果に対してセーヴを行なう際に有利を得る。",
+    "higherLevels": ""
+  },
+  {
+    "id": "hail-of-thorns",
+    "name": {
+      "ja": "ヘイル・オヴ・ソーンズ",
+      "en": "Hail of Thorns",
+      "altJa": "トゲの雨"
+    },
+    "level": 1,
+    "school": "召喚術",
+    "classes": [
+      "レンジャー"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "この呪文が終了するまでの間に、君の遠隔武器攻撃が初めてクリーチャ一にヒットした時、この呪文は君の遠隔武器または矢弾からトゲの雨を降らせる。その攻撃の通常の効果に加えて、攻撃の目標および目標から 1.5m (5フィート)以内にいるクリーチャー全員は【敏捷力】セーヴを行なわねばならない。このセーヴに失敗したクリーチャーは1d10 [刺突] ダメージを受ける (成功した者は半分のダメージ)。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ダメージが1d10増加する(最大で6d10ダメージ)。"
+  },
+  
+  {
+    "id": "bane",
+    "name": {
+      "ja": "ベイン",
+      "en": "Bane",
+      "altJa": "破滅の予感"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": ["クレリック", "バード"],
+    "castingTime": "1アクション",
+    "range": "30フィート（約9m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "血液1滴"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "射程内にいて君から見えるクリーチャーを最大3体まで選び、【魅力】セーヴを行なわせる。失敗したクリーチャーは、この呪文が終了するまで、攻撃ロールやセーヴを行なうたびに1d4をロールし、出た目を攻撃ロールやセーヴの結果から引かなければならない。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、追加でもう1体のクリーチャーを目標にできる。"
+  },
+  {
+    "id": "hex",
+    "name": {
+      "ja": "ヘクス",
+      "en": "Hex",
+      "altJa": "呪い"
+    },
+    "level": 1,
+    "school": "心術",
+    "classes": [
+      "ウォーロック"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "27m(90フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "石化したイモリの目1つ"
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1時間まで"
+    },
+    "description": "君は射程内にいて君から見えているクリーチャー1体に呪いをかける。 この呪文が終了するまで、君の攻撃が目標にヒットするたび、君は目標に1d6の追加 [死霊] ダメージを与える。さらに、君はこの呪文を発動する際に1種類の能力値を選ぶ。目標はその能力値を用いて行なう能力値判定に不利を受ける。\nこの呪文が終了する前に目標のhpが0になったなら、君は次以降の君のターンにボーナス・アクションとして新たなクリーチャー1体を呪うことができる。",
+    "higherLevels": ""
+  },
+  {
+    "id": "hellish-rebuke",
+    "name": {
+      "ja": "ヘリッシュ・リビューク",
+      "en": "Hellish Rebuke",
+      "altJa": "地獄の叱咤"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["ウォーロック"],
+    "castingTime": "1リアクション；このリアクションは、君から見え、かつ君から60フィート（約18m）以内にいるクリーチャーが君にダメージを与えた時に行なえる",
+    "range": "60フィート（約18m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "君が指を突きつけると、君にダメージを与えたクリーチャーは瞬間的に地獄の炎に包まれる。そのクリーチャーは【敏捷力】セーヴを行なわねばならず、失敗すると2d10［火］ダメージを受ける（成功した場合は半分のダメージ）。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ダメージが1d10増加する。"
+  },
+  {
+    "id": "magic-missile",
+    "name": {
+      "ja": "マジック・ミサイル",
+      "en": "Magic Missile",
+      "altJa": "魔法の矢"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "castingTime": "1アクション",
+    "range": "120フィート（約36m）",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "光り輝く魔法の力場の矢を3本作り出す。それぞれの矢は、射程内の君が見ることができ、君が選んだ任意のクリーチャーに命中する。1本の矢はその目標に1d4＋1の［力場］ダメージを与える。この矢はすべて同時に命中し、君はこれらを1体のクリーチャーに集中させることもできるし、複数のクリーチャーに分割させることもできる。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに追加で1本の矢を作り出す。"
+  },
+  {
+    "id": "mage-armor",
+    "name": {
+      "ja": "メイジ・アーマー",
+      "en": "Mage Armor",
+      "altJa": "魔導士の鎧"
+    },
+    "level": 1,
+    "school": "防御術",
+    "classes": ["ウィザード", "ソーサラー"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "一切れのなめし革"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "8時間"
+    },
+    "description": "鎧を着用していない、同意するクリーチャー1体に触れることで、呪文が終了するまで防護の魔法の力場がそのクリーチャーを取り囲む。目標の基本のACは（13＋目標の【敏捷力】修正値）になる。この呪文は目標が鎧を着用したとき、あるいは君がアクションを使用してこの呪文を終了させたときに終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "wrathful-smite",
+    "name": {
+      "ja": "ラスフル・スマイト",
+      "en": "Wrathful Smite",
+      "altJa": "憤怒の一撃"
+    },
+    "level": 1,
+    "school": "力術",
+    "classes": [
+      "パラディン"
+    ],
+    "castingTime": "1ボーナス・アクション",
+    "range": "自身",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": true,
+      "text": "精神集中、最大1分まで"
+    },
+    "description": "この呪文が終了するまでの間に、君の近接武器攻撃が初めてヒットした時、その攻撃は目標に1d6の追加 [精神] ダメージを与える。さらに、その攻撃の目標がクリーチャーなら、目標は【判断力】 セーヴを行なわねばならず、失敗するとこの呪文が終了するまで君に対する恐怖状態になる。 目標は1回のアクションとして、闘志を奮い立たせるために君の呪文セーヴ難易度に対する 【判断力】判定を行なうことができ、これに成功すればこの呪文は終了する。",
+    "higherLevels": ""
+  },
+  {
+    "id": "ray-of-sickness",
+    "name": {
+      "ja": "レイ・オヴ・シックネス",
+      "en": "Ray of Sickness",
+      "altJa": "不調化光線"
+    },
+    "level": 1,
+    "school": "死霊術",
+    "classes": [
+      "ソーサラー",
+      "ウィザード"
+    ],
+    "castingTime": "1アクション",
+    "range": "18m(60フィート)",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "materialDetail": ""
+    },
+    "duration": {
+      "concentration": false,
+      "text": "瞬間"
+    },
+    "description": "身体に不調をもたらす緑色の光線が、射程内のクリーチャー1体に襲いかかる。目標に対して1回の遠隔呪文攻撃を行なうこと。ヒットした場合、目標は2d8 [毒] ダメージを受け、【耐久力】セーヴを行なわねばならない。これに失敗したなら、目標は君の次のターンの終了時まで毒状態になる。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、ダメージが1d8増加する。"
+  },
+  {
+    "id": "longstrider",
+    "name": {
+      "ja": "ロングストライダー",
+      "en": "Longstrider",
+      "altJa": "健脚"
+    },
+    "level": 1,
+    "school": "変成術",
+    "classes": ["ウィザード", "ドルイド", "バード", "レンジャー"],
+    "castingTime": "1アクション",
+    "range": "接触",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "materialDetail": "土ひとつまみ"
+    },
+    "duration": {
+      "concentration": false,
+      "text": "1時間"
+    },
+    "description": "君は1体のクリーチャーに触れる。この呪文が終了するまで、目標の移動速度は10フィート（約3m）増加する。",
+    "higherLevels": "君がこの呪文を2レベル以上の呪文スロットを用いて発動する場合、スロットのレベルが1レベルを1上回るごとに、もう1体のクリーチャーを追加で目標にできる。"
+  }
+
+];
+
+    // DOM要素の取得
+    const searchInput = document.getElementById('searchInput');
+    const spellList = document.getElementById('spellList');
+    const resultCount = document.getElementById('resultCount');
+
+    const levelAll = document.getElementById('levelAll');
+    const levelCbs = document.querySelectorAll('.level-cb');
+
+    const classAll = document.getElementById('classAll');
+    const classCbs = document.querySelectorAll('.class-cb');
+
+    // ルール上重要な文字列を強調表示（ハイライト）する関数
+function highlightRules(text) {
+  if (!text) return "";
+
+  // 1. ダイス表記 (例: 1d6, 2d10+4, 1d4-1 など)
+  text = text.replace(/\b(\d+d\d+(?:\s*[\+\-]\s*\d+)?)\b/gi, '<strong class="hl hl-dice">$1</strong>');
+
+  // 2. 呪文攻撃
+  text = text.replace(/(近接呪文攻撃|遠隔呪文攻撃|呪文攻撃|攻撃ロール)/g, '<mark class="hl hl-attack">$1</mark>');
+
+  // 3. ダメージ種別 (例: ［火］, [冷気], 酸ダメージ など)
+  text = text.replace(/([［\[][^］\]]+[］\]]|(?:［|\[)?(?:酸|鈍器|斬撃|刺突|冷気|火|力場|電撃|死霊|毒|精神|光輝|雷鳴)(?:］|\])?(?:\s*ダメージ)?)/g, function(match) {
+    // すでにダイス等で一部マッチしている場合の二重囲みを簡易回避
+    if (match.includes('class=')) return match;
+    return `<mark class="hl hl-damage">${match}</mark>`;
+  });
+
+  // 4. セーヴィング・スロー (例: 【敏捷力】セーヴィング・スロー, 【判断力】セーヴ など)
+  text = text.replace(/(【[^】]+】\s*(?:セーヴィング・スロー|セーヴ))/g, '<mark class="hl hl-save">$1</mark>');
+
+  // 5. 距離・範囲 (例: 60フィート, 15フィートの円錐形, 半径10フィート, 1.5m など)
+  text = text.replace(/(\d+(?:\.\d+)?(?:フィート|メートル|m|cm|マイル)(?:（[^）]+）)?(?:以内|の円錐形|の正方形|の球形|の立方体|の範囲|の半径|半径)?)/g, function(match) {
+    if (match.includes('class=')) return match;
+    return `<mark class="hl hl-range">${match}</mark>`;
+  });
+
+  return text;
+}
+
+    // 「すべて」チェックボックスと個別チェックボックスの連動制御
+    function setupCheckboxGroup(allCb, individualCbs) {
+      allCb.addEventListener('change', () => {
+        if (allCb.checked) {
+          individualCbs.forEach(cb => cb.checked = false);
+        }
+        filterSpells();
+      });
+
+      individualCbs.forEach(cb => {
+        cb.addEventListener('change', () => {
+          const anyChecked = Array.from(individualCbs).some(c => c.checked);
+          if (anyChecked) {
+            allCb.checked = false;
+          } else {
+            allCb.checked = true;
+          }
+          filterSpells();
+        });
+      });
+    }
+
+    setupCheckboxGroup(levelAll, levelCbs);
+    setupCheckboxGroup(classAll, classCbs);
+
+    // テキスト検索入力イベント
+    searchInput.addEventListener('input', filterSpells);
+
+    // 構成要素（V, S, M）のテキスト変換
+    function formatComponents(comp) {
+      if (!comp) return 'なし';
+      const parts = [];
+      if (comp.verbal) parts.push('音声');
+      if (comp.somatic) parts.push('動作');
+      if (comp.material) {
+        let mStr = '呪文素材';
+        if (comp.materialDetail) {
+          mStr += `（${comp.materialDetail}）`;
+        }
+        parts.push(mStr);
+      }
+      return parts.join('、') || 'なし';
+    }
+
+    // フィルタリングメイン処理
+    function filterSpells() {
+      const searchText = searchInput.value.trim().toLowerCase();
+
+      // 選択されているレベルの取得
+      const isLevelAll = levelAll.checked;
+      const selectedLevels = Array.from(levelCbs)
+        .filter(cb => cb.checked)
+        .map(cb => parseInt(cb.value, 10));
+
+      // 選択されているクラスの取得
+      const isClassAll = classAll.checked;
+      const selectedClasses = Array.from(classCbs)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+      const filtered = spellsData.filter(spell => {
+        // 1. レベル一致判定
+        if (!isLevelAll && !selectedLevels.includes(spell.level)) {
+          return false;
+        }
+
+        // 2. クラス一致判定 (クラス指定がない/空配列の場合は全クラスOKとして扱うか、一致を見るか)
+        if (!isClassAll) {
+          // 呪文側のクラス一覧のいずれかが、選択クラスに含まれているか
+          const hasClass = spell.classes.some(c => selectedClasses.includes(c));
+          if (!hasClass) return false;
+        }
+
+        // 3. テキスト検索判定
+        if (searchText !== '') {
+          const jaName = (spell.name.ja || '').toLowerCase();
+          const enName = (spell.name.en || '').toLowerCase();
+          const altJa = (spell.name.altJa || '').toLowerCase();
+          const desc = (spell.description || '').toLowerCase();
+          const higher = (spell.higherLevels || '').toLowerCase();
+
+          const matchText = jaName.includes(searchText) ||
+                            enName.includes(searchText) ||
+                            altJa.includes(searchText) ||
+                            desc.includes(searchText) ||
+                            higher.includes(searchText);
+
+          if (!matchText) return false;
+        }
+
+        return true;
+      });
+
+      renderSpells(filtered);
+    }
+
+    // 画面描画処理
+    // 呪文リストの描画関数（該当箇所を以下のように差し替え）
+function renderSpells(spells) {
+  const spellList = document.getElementById('spellList');
+  const resultCount = document.getElementById('resultCount');
+  
+  resultCount.textContent = `該当件数: ${spells.length}件`;
+  
+  if (spells.length === 0) {
+    spellList.innerHTML = '<div class="no-results">該当する呪文が見つかりませんでした。</div>';
+    return;
+  }
+
+  spellList.innerHTML = spells.map(spell => {
+    const componentsList = [];
+    if (spell.components.verbal) componentsList.push('音声');
+    if (spell.components.somatic) componentsList.push('動作');
+    if (spell.components.material) componentsList.push(`物質 (${spell.components.materialDetail})`);
+
+    // 強調処理の適用
+    //const highlightedRange = highlightRules(spell.range);
+    //const highlightedDesc = highlightRules(spell.description);
+    //const highlightedHigher = highlightRules(spell.higherLevels);
+
+    return `
+      <article class="spell-card">
+        <div class="spell-header">
+          <div class="spell-name-container">
+            <h2 class="spell-name">${spell.name.ja}</h2>
+            <span class="spell-en-name">${spell.name.en} / ${spell.name.altJa}</span>
+          </div>
+          <div class="spell-meta">
+            ${spell.level === 0 ? '初級呪文' : `${spell.level}レベル`} / ${spell.school}
+          </div>
+        </div>
+
+        <div class="classes-tags">
+          ${spell.classes.map(c => `<span class="class-tag">${c}</span>`).join('')}
+        </div>
+
+        <div class="spell-details">
+          <div><strong>発動時間:</strong> ${spell.castingTime}</div>
+          <div><strong>射程:</strong> ${spell.range}</div>
+          <div><strong>持続時間:</strong> ${spell.duration.text}</div>
+          <div style="white-space: nowrap;"><strong>構成要素:</strong> ${componentsList.join('、')}</div>
+        </div>
+
+        
+
+        <div class="spell-description">${spell.description}</div>
+
+        ${spell.higherLevels ? `
+          <div class="spell-higher">
+            <strong>高レベル発動:</strong> ${spell.higherLevels}
+          </div>
+        ` : ''}
+      </article>
+    `;
+  }).join('');
+}
+
+    // 初頭描画
+    filterSpells();
+  </script>
+</body>
+</html>
